@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: m2-user-service
+
+  datasource:
+    url: jdbc:postgresql://switchyard.proxy.rlwy.net:44805/railway?stringtype=unspecified
+    username: postgres
+    password: GcsEmbPNyJCDzIPDWiApeZlNfmtWKdTB
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8082
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+jwt:
+  secret: CRONOS2026_SECRET_KEY_256_BITS_LONG_ENOUGH_1234567890ABCDEF
