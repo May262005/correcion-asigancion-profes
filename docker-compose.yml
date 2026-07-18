@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    build: ./eureka_service # Apunta a la carpeta de tu Eureka
+    ports:
+      - "8761:8761"
+
+  api-gateway:
+    build: ./api_gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  auth-service:
+    build: ./m1_auth_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  user-service:
+    build: ./m2_user_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+  
+  prifile-service:
+    build: ./m3_prifile_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  building-service:
+    build: ./m4_building_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  room-service:
+    build: ./m5_room-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  teacher-service:
+    build: ./m6_teacher-service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  curriculum-service:
+    build: ./m7_curriculum_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  group-service:
+    build: ./m8_group_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  schedule-service:
+    build: ./m9_schedule_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  psychology-service:
+    build: ./m11_psychology_service
+    depends_on:
+      eureka-server:
+        condition: service_started
+
+  mentorship-service:
+    build: ./m12_mentorship_service
+    depends_on:
+      eureka-server:
+        condition: service_started
