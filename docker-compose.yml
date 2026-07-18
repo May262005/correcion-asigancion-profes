@@ -79,3 +79,11 @@ services:
     depends_on:
       eureka-server:
         condition: service_started
+
+  gene-service: # <-- Cambiado a minúsculas para que Docker no lo rechace
+    build: ./Gene # <-- Este se queda igual porque tu carpeta real se llama 'Gene'
+    ports:
+      - "8000:8000"
+    depends_on:
+      eureka-server:
+        condition: service_started
