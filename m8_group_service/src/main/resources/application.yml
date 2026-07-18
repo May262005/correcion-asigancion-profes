@@ -1,0 +1,67 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: m8-group-service
+
+  # ── Base de datos (Railway - Misma que M3) ───────────────────
+  datasource:
+    url: jdbc:postgresql://switchyard.proxy.rlwy.net:44805/railway
+    username: postgres
+    password: GcsEmbPNyJCDzIPDWiApeZlNfmtWKdTB
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: m8-group-pool
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ── JPA / Hibernate ──────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+
+  # ── Jackson ───────────────────────────────────────────────
+  jackson:
+    default-property-inclusion: non_null
+
+# ── Logging ───────────────────────────────────────────────────
+logging:
+  level:
+    com.example.m8_group_service: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+
+# ── Actuator ──────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+
+#eureka---
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+#djdee
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui/index.html

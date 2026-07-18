@@ -1,9 +1,9 @@
 spring:
   application:
-    name: m2-user-service
+    name: m1-auth-service
 
   datasource:
-    url: jdbc:postgresql://switchyard.proxy.rlwy.net:44805/railway?stringtype=unspecified
+    url: jdbc:postgresql://switchyard.proxy.rlwy.net:44805/railway
     username: postgres
     password: GcsEmbPNyJCDzIPDWiApeZlNfmtWKdTB
     driver-class-name: org.postgresql.Driver
@@ -19,7 +19,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 server:
-  port: 8082
+  port: 8081
 
 eureka:
   client:
@@ -31,3 +31,4 @@ eureka:
 
 jwt:
   secret: CRONOS2026_SECRET_KEY_256_BITS_LONG_ENOUGH_1234567890ABCDEF
+  expiration: 3600000
