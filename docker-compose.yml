@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  postgres-db: # 👈 O el nombre que tenga tu servicio de base de datos
+    image: postgres:15
+    # ... tus configuraciones de puertos y environment ...
+    healthcheck: # 👈 Mide si la BD ya acepta conexiones reales
+      test: ["CMD-SHELL", "pg_isready -U postgres -d railway"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   eureka-server:
     build: ./eureka_service # Apunta a la carpeta de tu Eureka
     ports:

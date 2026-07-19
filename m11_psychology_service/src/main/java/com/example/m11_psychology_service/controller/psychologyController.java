@@ -2,7 +2,7 @@ package com.example.m11_psychology_service.controller;
 
 import com.example.m11_psychology_service.dto.CitaPsicologicaDto;
 import com.example.m11_psychology_service.entity.CitaPsicologicaEntity.EstadoCita;
-import com.example.m11_psychology_service.service.PsychologyService;
+import com.example.m11_psychology_service.service.psychologyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +12,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/psychology/citas")
 @RequiredArgsConstructor
-public class PsychologyController {
+public class psychologyController {
 
-    private final PsychologyService psychologyService;
+    private final psychologyService psychologyService;
 
     @PostMapping
     public ResponseEntity<CitaPsicologicaDto> create(@RequestBody CitaPsicologicaDto dto) {

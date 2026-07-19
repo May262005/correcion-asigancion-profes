@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class PsychologyService {
+public class psychologyService {
 
     private final CitaPsicologicaRepository citaRepository;
 
