@@ -66,6 +66,25 @@ spring:
               uri: lb://GENE-SERVICE
               predicates:
                 - Path=/api/gene/**
+            - id: turno-service
+              uri: lb://m10-turno-service
+              predicates:
+                - Path=/api/turnos/**
+
+            - id: profesor-asignatura-service
+              uri: lb://m14-profesor-asignatura-service
+              predicates:
+                - Path=/api/profesor-asignatura/**
+
+            - id: profesor-aula-service
+              uri: lb://m14-profesor-asignatura-service
+              predicates:
+                - Path=/api/profesor-aula/**
+
+            - id: periodo-service
+              uri: lb://m15-periodo-service
+              predicates:
+                - Path=/api/periodos/**
 
             # ✅ NUEVO SERVICIO DE DIVISIONES
             - id: division-service

@@ -46,7 +46,7 @@
             <span class="avatar-text">{{ obtenerIniciales(datos.usuario) }}</span>
           </div>
           <h2 class="user-full-name">
-            {{ datos.usuario.nombre }} {{ datos.usuario.apellido_paterno }}
+            {{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }}
           </h2>
           <span class="user-role-badge">Administrador</span>
         </div>
@@ -58,7 +58,7 @@
             <div class="info-icon"><i class="fas fa-envelope"></i></div>
             <div class="info-details">
               <span class="info-label">Correo Electrónico</span>
-              <span class="info-value">{{ datos.usuario.correo_electronico || 'N/A' }}</span>
+              <span class="info-value">{{ datos.usuario.correoElectronico || 'N/A' }}</span>
             </div>
           </div>
 
@@ -74,7 +74,7 @@
             <div class="info-icon"><i class="fas fa-user"></i></div>
             <div class="info-details">
               <span class="info-label">Nombre Completo</span>
-              <span class="info-value">{{ datos.usuario.nombre }} {{ datos.usuario.apellido_paterno }} {{ datos.usuario.apellido_materno }}</span>
+              <span class="info-value">{{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }} {{ datos.usuario.apellidoMaterno }}</span>
             </div>
           </div>
         </div>
@@ -190,13 +190,13 @@ const errors = ref({
 const obtenerIniciales = (usuario) => {
   if (!usuario) return '?'
   const n = usuario.nombre?.charAt(0) || ''
-  const a = usuario.apellido_paterno?.charAt(0) || ''
+  const a = usuario.apellidoPaterno?.charAt(0) || ''
   return (n + a).toUpperCase()
 }
 
 onMounted(async () => {
   try {
-    const res = await axios.get(`/usuario/perfil/${id}`)
+    const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
   } catch (e) {
     Swal.fire({
@@ -229,9 +229,9 @@ const cerrarSesion = async () => {
 const editarPerfil = () => {
   formData.value = {
     nombre: datos.value.usuario?.nombre || '',
-    apellido_paterno: datos.value.usuario?.apellido_paterno || '',
-    apellido_materno: datos.value.usuario?.apellido_materno || '',
-    correo_electronico: datos.value.usuario?.correo_electronico || '',
+    apellido_paterno: datos.value.usuario?.apellidoPaterno || '',
+    apellido_materno: datos.value.usuario?.apellidoMaterno || '',
+    correo_electronico: datos.value.usuario?.correoElectronico || '',
     password: '',
     confirmarPassword: ''
   }
@@ -260,12 +260,19 @@ const guardarCambios = async () => {
   guardando.value = true
   cargandoAccion.value = true
   try {
-    const datosActualizar = { ...formData.value }
-    if (!datosActualizar.password) delete datosActualizar.password
-    delete datosActualizar.confirmarPassword
+    // ✅ Convertimos snake_case (formulario) a camelCase (lo que espera el backend)
+    const datosActualizar = {
+      nombre: formData.value.nombre,
+      apellidoPaterno: formData.value.apellido_paterno,
+      apellidoMaterno: formData.value.apellido_materno,
+      correoElectronico: formData.value.correo_electronico,
+    }
+    if (formData.value.password) {
+      datosActualizar.password = formData.value.password
+    }
 
-    await axios.put(`/usuario/perfil/${id}`, datosActualizar)
-    const res = await axios.get(`/usuario/perfil/${id}`)
+    await axios.put(`/api/usuario/perfil/${id}`, datosActualizar)
+    const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
     mostrarFormulario.value = false
     Swal.fire({ icon: 'success', title: 'Perfil actualizado', showConfirmButton: false, timer: 1500 })

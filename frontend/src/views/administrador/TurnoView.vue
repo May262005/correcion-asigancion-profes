@@ -157,12 +157,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import axios from '../../utils/axios-config'
 import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const API_TURNOS = `http://localhost:3000/turnos`
+const API_TURNOS = `/api/turnos`
 
 const goBack = () => {
   router.back()

@@ -73,12 +73,8 @@
           </table>
 
           <div class="pagination">
-            <button
-              v-for="pageNumber in totalPages"
-              :key="pageNumber"
-              @click="currentPage = pageNumber"
-              :class="{ active: pageNumber === currentPage }"
-            >
+            <button v-for="pageNumber in totalPages" :key="pageNumber" @click="currentPage = pageNumber"
+              :class="{ active: pageNumber === currentPage }">
               {{ pageNumber }}
             </button>
           </div>
@@ -116,7 +112,7 @@
                 <select v-model="form.id_profesor" required>
                   <option disabled value="">Selecciona un profesor</option>
                   <option v-for="prof in profesores" :key="prof.id" :value="prof.id">
-                    {{ prof.usuario?.nombre }} {{ prof.usuario?.apellido_paterno }}
+                    {{ prof.abreviaturaNombre }} - {{ prof.titulo }}
                   </option>
                 </select>
               </div>
@@ -126,7 +122,7 @@
                 <select v-model="form.id_asignatura" required>
                   <option disabled value="">Selecciona una asignatura</option>
                   <option v-for="asig in asignaturas" :key="asig.id" :value="asig.id">
-                    {{ asig.nombre }} - {{ asig.division?.nombre }}
+                    {{ asig.nombre }}
                   </option>
                 </select>
               </div>
@@ -136,7 +132,7 @@
                 <select v-model="form.id_aula">
                   <option value="">Sin aula</option>
                   <option v-for="aula in aulas" :key="aula.id" :value="aula.id">
-                    {{ aula.nombre }} - {{ aula.edificio?.nombre || 'Sin edificio' }}
+                    {{ aula.nombre }}
                   </option>
                 </select>
               </div>
@@ -155,12 +151,7 @@
                 <label>Grupos (múltiples)</label>
                 <div class="checkbox-group">
                   <div v-for="grupo in grupos" :key="grupo.id" class="checkbox-item">
-                    <input 
-                      type="checkbox" 
-                      :id="'grupo-' + grupo.id"
-                      :value="grupo.id"
-                      v-model="form.id_grupos"
-                    />
+                    <input type="checkbox" :id="'grupo-' + grupo.id" :value="grupo.id" v-model="form.id_grupos" />
                     <label :for="'grupo-' + grupo.id">{{ grupo.nombre }}</label>
                   </div>
                 </div>
@@ -181,7 +172,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import axios from '../../utils/axios-config'
 import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
@@ -191,13 +182,14 @@ const goBack = () => {
   router.back()
 }
 
-const API_ASIGNACIONES = `http://localhost:3000/profesor-asignatura`
-const API_ASIGNACIONES_AULAS = `http://localhost:3000/profesor-aula`
-const API_PROFESORES = `http://localhost:3000/profesores`
-const API_ASIGNATURAS = `http://localhost:3000/asignaturas`
-const API_PERIODOS = `http://localhost:3000/periodos`
-const API_GRUPOS = `http://localhost:3000/grupos`
-const API_AULAS = `http://localhost:3000/aulas`
+// ✅ Rutas reales a través del Gateway
+const API_ASIGNACIONES = `/api/profesor-asignatura`
+const API_ASIGNACIONES_AULAS = `/api/profesor-aula`
+const API_PROFESORES = `/api/teachers`
+const API_ASIGNATURAS = `/api/curriculum`
+const API_PERIODOS = `/api/periodos`
+const API_GRUPOS = `/api/v1/grupos`
+const API_AULAS = `/aulas`
 
 const asignaciones = ref([])
 const profesores = ref([])
@@ -205,6 +197,9 @@ const asignaturas = ref([])
 const periodos = ref([])
 const grupos = ref([])
 const aulas = ref([])
+
+// ✅ Cache de nombres de usuario, para no repetir peticiones al mismo idUsuario
+const usuariosCache = ref({})
 
 const itemsPerPage = 3
 const currentPage = ref(1)
@@ -227,9 +222,52 @@ const form = ref({
 const totalPages = computed(() => Math.ceil(asignaciones.value.length / itemsPerPage))
 const indexOfLast = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirst = computed(() => indexOfLast.value - itemsPerPage)
-const currentAsignaciones = computed(() => 
+const currentAsignaciones = computed(() =>
   asignaciones.value.slice(indexOfFirst.value, indexOfLast.value)
 )
+
+// ✅ Trae el nombre completo de un usuario por su ID, con cache
+const obtenerNombreUsuario = async (idUsuario) => {
+  if (!idUsuario) return 'N/A'
+  if (usuariosCache.value[idUsuario]) return usuariosCache.value[idUsuario]
+
+  try {
+    const res = await axios.get(`/api/usuario/perfil/${idUsuario}`)
+    const u = res.data.usuario
+    const nombreCompleto = u ? `${u.nombre} ${u.apellidoPaterno}` : 'N/A'
+    usuariosCache.value[idUsuario] = nombreCompleto
+    return nombreCompleto
+  } catch (err) {
+    console.error('Error obteniendo usuario:', err)
+    return 'N/A'
+  }
+}
+
+const obtenerNombreProfesor = async (idProfesor) => {
+  const profesor = profesores.value.find(p => p.id === idProfesor)
+  if (!profesor) return 'N/A'
+  return await obtenerNombreUsuario(profesor.idUsuario)
+}
+
+const obtenerNombreAsignatura = (idAsignatura) => {
+  const asig = asignaturas.value.find(a => a.id === idAsignatura)
+  return asig ? asig.nombre : '-'
+}
+
+const obtenerNombreGrupo = (idGrupo) => {
+  const grupo = grupos.value.find(g => g.id === idGrupo)
+  return grupo ? grupo.nombre : null
+}
+
+const obtenerNombrePeriodo = (idPeriodo) => {
+  const periodo = periodos.value.find(p => p.id === idPeriodo)
+  return periodo ? periodo.nombre : '-'
+}
+
+const obtenerAula = (idAula) => {
+  const aula = aulas.value.find(a => a.id === idAula)
+  return aula || null
+}
 
 const cargarCatalogos = async () => {
   try {
@@ -266,31 +304,35 @@ const cargarAsignaciones = async () => {
     const res = await axios.get(API_ASIGNACIONES)
     const aulasRes = await axios.get(API_ASIGNACIONES_AULAS)
     const aulasAsignadas = aulasRes.data
-    
-    const asignacionesConAulas = res.data.map(asig => {
-      const aulaAsignada = aulasAsignadas.find(
-        a => a.id_profesor === asig.id_profesor &&
-             a.id_periodo === asig.id_periodo
-      )
 
-      return {
-        id: asig.id,
-        nombreProfesor: asig.profesor?.usuario 
-          ? `${asig.profesor.usuario.nombre} ${asig.profesor.usuario.apellido_paterno}`
-          : 'N/A',
-        asignatura: asig.asignatura?.nombre || '-',
-        division: asig.asignatura?.division?.nombre || '-',
-        aula: aulaAsignada?.aula?.nombre || '-',
-        edificio: aulaAsignada?.aula?.edificio?.nombre || '-',
-        periodo: asig.periodo?.nombre || '-',
-        grupos: asig.gruposAsignados?.length > 0
-          ? asig.gruposAsignados.map(ga => ga.grupo?.nombre).filter(Boolean).join(', ')
-          : '-',
-        datosOriginales: asig
-      }
-    })
-    
-    asignaciones.value = asignacionesConAulas
+    // ✅ Se resuelven los nombres de profesor de forma asíncrona (por el cruce con usuario)
+    const asignacionesConDatos = await Promise.all(
+      res.data.map(async (asig) => {
+        const aulaAsignada = aulasAsignadas.find(
+          a => a.idProfesor === asig.idProfesor && a.idPeriodo === asig.idPeriodo
+        )
+        const aulaInfo = aulaAsignada ? obtenerAula(aulaAsignada.idAula) : null
+
+        const nombresGrupos = (asig.idGrupos || [])
+          .map(id => obtenerNombreGrupo(id))
+          .filter(Boolean)
+          .join(', ')
+
+        return {
+          id: asig.id,
+          nombreProfesor: await obtenerNombreProfesor(asig.idProfesor),
+          asignatura: obtenerNombreAsignatura(asig.idAsignatura),
+          division: '-', // el catálogo de curriculum no trae división anidada; se deja pendiente si se necesita
+          aula: aulaInfo ? aulaInfo.nombre : '-',
+          edificio: '-', // el catálogo de aulas no trae edificio anidado por ahora
+          periodo: obtenerNombrePeriodo(asig.idPeriodo),
+          grupos: nombresGrupos || '-',
+          datosOriginales: asig
+        }
+      })
+    )
+
+    asignaciones.value = asignacionesConDatos
   } catch (err) {
     console.error('Error cargando asignaciones:', err)
     await Swal.fire({
@@ -324,40 +366,39 @@ const abrirFormularioNuevo = () => {
 const editarAsignacion = async (asig) => {
   modoEdicion.value = true
   itemEditando.value = asig.id
-  
+
   let idAula = ''
   try {
     const aulasRes = await axios.get(API_ASIGNACIONES_AULAS)
     const aulaAsignada = aulasRes.data.find(
-      a => a.id_profesor === asig.datosOriginales.id_profesor && 
-           a.id_periodo === asig.datosOriginales.id_periodo
+      a => a.idProfesor === asig.datosOriginales.idProfesor &&
+        a.idPeriodo === asig.datosOriginales.idPeriodo
     )
-    if (aulaAsignada) {
-      idAula = aulaAsignada.id_aula
-    }
+    if (aulaAsignada) idAula = aulaAsignada.idAula
   } catch (err) {
     console.error('Error buscando aula:', err)
   }
 
   form.value = {
-    id_profesor: asig.datosOriginales.id_profesor,
-    id_asignatura: asig.datosOriginales.id_asignatura,
+    id_profesor: asig.datosOriginales.idProfesor,
+    id_asignatura: asig.datosOriginales.idAsignatura,
     id_aula: idAula,
-    id_periodo: asig.datosOriginales.id_periodo,
-    id_grupos: asig.datosOriginales.gruposAsignados?.map(ga => ga.id_grupo) || []
+    id_periodo: asig.datosOriginales.idPeriodo,
+    id_grupos: asig.datosOriginales.idGrupos || []
   }
-  
+
   mostrarFormulario.value = true
 }
 
 const guardarAsignacion = async () => {
   cargandoAccion.value = true
   try {
+    // ✅ Ahora se manda en camelCase, como lo espera el backend nuevo
     const payloadAsignatura = {
-      id_profesor: form.value.id_profesor,
-      id_asignatura: form.value.id_asignatura,
-      id_periodo: form.value.id_periodo,
-      id_grupos: form.value.id_grupos
+      idProfesor: form.value.id_profesor,
+      idAsignatura: form.value.id_asignatura,
+      idPeriodo: form.value.id_periodo,
+      idGrupos: form.value.id_grupos
     }
 
     if (modoEdicion.value) {
@@ -368,16 +409,16 @@ const guardarAsignacion = async () => {
 
     if (form.value.id_aula) {
       const payloadAula = {
-        id_profesor: form.value.id_profesor,
-        id_aula: form.value.id_aula,
-        id_periodo: form.value.id_periodo
+        idProfesor: form.value.id_profesor,
+        idAula: form.value.id_aula,
+        idPeriodo: form.value.id_periodo
       }
 
       try {
         const aulasRes = await axios.get(API_ASIGNACIONES_AULAS)
         const aulaExistente = aulasRes.data.find(
-          a => a.id_profesor === form.value.id_profesor && 
-               a.id_periodo === form.value.id_periodo
+          a => a.idProfesor === form.value.id_profesor &&
+            a.idPeriodo === form.value.id_periodo
         )
 
         if (aulaExistente) {
@@ -444,7 +485,7 @@ const eliminarAsignacion = async (id) => {
     try {
       await axios.delete(`${API_ASIGNACIONES}/${id}`)
       cargandoAccion.value = false
-      
+
       await Swal.fire({
         icon: 'success',
         title: 'Eliminado',
@@ -456,9 +497,9 @@ const eliminarAsignacion = async (id) => {
         iconColor: '#3ABEF9',
         width: '450px',
       })
-      
+
       await cargarAsignaciones()
-      
+
       if (currentAsignaciones.value.length === 0 && currentPage.value > 1) {
         currentPage.value--
       }
@@ -797,26 +838,26 @@ onMounted(async () => {
   .asignaciones-main {
     padding: 0 15px;
   }
-  
+
   .asignaciones-card {
     padding: 20px;
   }
-  
+
   .form-grid-layout {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  
+
   .input-group.full-width {
     grid-column: span 1;
   }
-  
+
   .styled-table th,
   .styled-table td {
     padding: 10px 8px;
     font-size: 0.75rem;
   }
-  
+
   .btn-accion {
     margin: 2px;
     font-size: 0.7rem;
@@ -830,23 +871,23 @@ onMounted(async () => {
     justify-content: center;
     gap: 10px;
   }
-  
+
   .header-spacer {
     display: none;
   }
-  
+
   .btn-back-icon {
     position: absolute;
     left: 0;
     top: 0;
   }
-  
+
   .header-text {
     flex: none;
     width: 100%;
     margin-top: 10px;
   }
-  
+
   .header-text h1 {
     font-size: 1.5rem;
   }
@@ -856,7 +897,7 @@ onMounted(async () => {
   .styled-table thead {
     display: none;
   }
-  
+
   .styled-table tbody tr {
     display: block;
     margin-bottom: 15px;
@@ -864,7 +905,7 @@ onMounted(async () => {
     border-radius: 12px;
     padding: 10px;
   }
-  
+
   .styled-table td {
     display: flex;
     justify-content: space-between;
@@ -873,7 +914,7 @@ onMounted(async () => {
     border-bottom: 1px solid #e2e8f0;
     text-align: right;
   }
-  
+
   .styled-table td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -881,23 +922,23 @@ onMounted(async () => {
     text-align: left;
     width: 40%;
   }
-  
+
   .styled-table td:last-child {
     border-bottom: none;
   }
-  
+
   .btn-accion {
     width: auto;
   }
-  
+
   .modal-footer {
     flex-direction: column-reverse;
   }
-  
+
   .modal-footer button {
     width: 100%;
   }
-  
+
   .checkbox-item {
     padding: 6px 0;
   }

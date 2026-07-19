@@ -127,7 +127,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import axios from '../../utils/axios-config'
 import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
@@ -139,7 +139,7 @@ const goBack = () => {
 
 const API_HORARIOS = `http://localhost:3000/horario-profesor`
 const API_PROFESORES = `http://localhost:3000/profesores`
-const API_TURNOS = `http://localhost:3000/turnos`
+const API_TURNOS = `/api/turnos`
 
 const profesorSeleccionado = ref('')
 const horariosProfesor = ref([])
