@@ -9,7 +9,6 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/teachers")
 public class TeacherController {
 
