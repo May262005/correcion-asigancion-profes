@@ -1,17 +1,6 @@
-version: '3.8'
-
 services:
-  postgres-db: # 👈 O el nombre que tenga tu servicio de base de datos
-    image: postgres:15
-    # ... tus configuraciones de puertos y environment ...
-    healthcheck: # 👈 Mide si la BD ya acepta conexiones reales
-      test: ["CMD-SHELL", "pg_isready -U postgres -d railway"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   eureka-server:
-    build: ./eureka_service # Apunta a la carpeta de tu Eureka
+    build: ./eureka_service
     ports:
       - "8761:8761"
 
@@ -25,72 +14,94 @@ services:
 
   auth-service:
     build: ./m1_auth_service
+    ports:
+      - "8081:8081"
     depends_on:
       eureka-server:
         condition: service_started
 
   user-service:
     build: ./m2_user_service
+    ports:
+      - "8082:8082"
     depends_on:
       eureka-server:
         condition: service_started
-  
+
   prifile-service:
     build: ./m3_prifile_service
+    ports:
+      - "8083:8083"
     depends_on:
       eureka-server:
         condition: service_started
 
   building-service:
     build: ./m4_building_service
+    ports:
+      - "8084:8084"
     depends_on:
       eureka-server:
         condition: service_started
 
   room-service:
     build: ./m5_room-service
+    ports:
+      - "8085:8085"
     depends_on:
       eureka-server:
         condition: service_started
 
   teacher-service:
     build: ./m6_teacher-service
+    ports:
+      - "8086:8086"
     depends_on:
       eureka-server:
         condition: service_started
 
   curriculum-service:
     build: ./m7_curriculum_service
+    ports:
+      - "8087:8087"
     depends_on:
       eureka-server:
         condition: service_started
 
   group-service:
     build: ./m8_group_service
+    ports:
+      - "8088:8088"
     depends_on:
       eureka-server:
         condition: service_started
 
   schedule-service:
     build: ./m9_schedule_service
+    ports:
+      - "8089:8089"
     depends_on:
       eureka-server:
         condition: service_started
 
   psychology-service:
     build: ./m11_psychology_service
+    ports:
+      - "8091:8091"
     depends_on:
       eureka-server:
         condition: service_started
 
   mentorship-service:
     build: ./m12_mentorship_service
+    ports:
+      - "8092:8092"
     depends_on:
       eureka-server:
         condition: service_started
 
-  gene-service: # <-- Cambiado a minúsculas para que Docker no lo rechace
-    build: ./Gene # <-- Este se queda igual porque tu carpeta real se llama 'Gene'
+  gene-service:
+    build: ./Gene
     ports:
       - "8000:8000"
     depends_on:

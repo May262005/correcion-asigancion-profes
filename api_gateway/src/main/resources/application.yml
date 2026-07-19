@@ -4,32 +4,87 @@ spring:
   
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            - id: auth-service
-              uri: lb://M1-AUTH-SERVICE
-              predicates:
-                - Path=/api/auth/**
-            
-            - id: user-service
-              uri: lb://M2-USER-SERVICE
-              predicates:
-                - Path=/api/usuario/**, /api/profesores/**, /api/estudiantes/**
-          
-          globalcors:
-            cors-configurations:
-              '[/**]':
-                allowed-origins: "*"
-                allowed-methods:
-                  - GET
-                  - POST
-                  - PUT
-                  - PATCH
-                  - DELETE
-                  - OPTIONS
-                allowed-headers: "*"
-                allow-credentials: false
+      routes:
+        - id: auth-service
+          uri: lb://M1-AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+
+        - id: user-service
+          uri: lb://M2-USER-SERVICE
+          predicates:
+            - Path=/api/usuario/**, /api/profesores/**, /api/estudiantes/**
+
+        - id: profile-service
+          uri: lb://m3-profile-service
+          predicates:
+            - Path=/api/v1/profiles/**
+
+        - id: building-service
+          uri: lb://m4-building-service
+          predicates:
+            - Path=/edificios/**
+
+        - id: room-service
+          uri: lb://m5-room-service
+          predicates:
+            - Path=/aulas/**
+
+        - id: teacher-service
+          uri: lb://m6-teacher-service
+          predicates:
+            - Path=/api/teachers/**
+
+        - id: curriculum-service
+          uri: lb://m7-curriculum-service
+          predicates:
+            - Path=/api/curriculum/**
+
+        - id: group-service
+          uri: lb://m8-group-service
+          predicates:
+            - Path=/api/v1/grupos/**
+
+        - id: schedule-service
+          uri: lb://m9-schedule-service
+          predicates:
+            - Path=/api/schedule/**
+
+        - id: psychology-service
+          uri: lb://m11-psychology-service
+          predicates:
+            - Path=/api/psychology/**
+
+        - id: mentorship-service
+          uri: lb://m12-mentorship-service
+          predicates:
+            - Path=/api/mentorship/**
+
+        - id: gene-service
+          uri: lb://GENE-SERVICE
+          predicates:
+            - Path=/api/gene/**
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: false
+      httpclient:
+        connect-timeout: 1000
+        response-timeout: 5s
+
+    loadbalancer:
+      cache:
+        enabled: false
 
 server:
   port: 8080
@@ -39,7 +94,6 @@ eureka:
     service-url:
       defaultZone: http://eureka-server:8761/eureka/
 
-# Swagger
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -47,7 +101,3 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
-    operations-sorter: method
-    tags-sorter: alpha
-    try-it-out-enabled: true
-    groups-order: asc

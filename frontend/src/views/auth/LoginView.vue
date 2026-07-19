@@ -15,7 +15,7 @@
       <form @submit="handleSubmit" class="form-lg">
         <div class="input-group">
           <i class="fas fa-envelope"></i>
-          <input v-model="correo_electronico" type="email" placeholder="Correo electrónico" required />
+          <input v-model="correoElectronico" type="email" placeholder="Correo electrónico" required />
         </div>
 
         <div class="input-group">
@@ -40,26 +40,23 @@
 </template>
 
 <script setup>
-/* ... Mantenemos toda tu lógica de script setup exactamente igual ... */
 import axios from '../../utils/axios-config'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const correo_electronico = ref('')
+const correoElectronico = ref('')
 const contrasena = ref('')
 
 const handleSubmit = (event) => {
   event.preventDefault()
-  event.stopPropagation()
-  event.stopImmediatePropagation()
   login()
   return false
 }
 
 const login = async () => {
-  if (!correo_electronico.value || !contrasena.value) {
+  if (!correoElectronico.value || !contrasena.value) {
     Swal.fire({
       icon: 'error',
       title: 'Campos incompletos',
@@ -76,14 +73,16 @@ const login = async () => {
   }
 
   try {
-    const res = await axios.post('/auth/login', {
-      correo_electronico: correo_electronico.value,
+    // ✅ Login con camelCase (Spring Boot)
+    const res = await axios.post('/api/auth/login', {
+      correoElectronico: correoElectronico.value,
       contrasena: contrasena.value
     })
 
+    // ✅ Guardar datos en localStorage (con camelCase)
     localStorage.setItem('access_token', res.data.token)
     localStorage.setItem('id', res.data.id)
-    localStorage.setItem('id_rol', res.data.id_rol)
+    localStorage.setItem('idRol', res.data.idRol || '')
     localStorage.setItem('nombre', res.data.nombre)
     localStorage.setItem('rol', res.data.rol)
 
@@ -99,6 +98,7 @@ const login = async () => {
       width: '400px'
     })
 
+    // ✅ Redirigir según rol
     switch (res.data.rol) {
       case 'estudiante': router.push({ name: 'alumno-home' }); break
       case 'admin': router.push({ name: 'dashboard' }); break
@@ -109,6 +109,7 @@ const login = async () => {
   } catch (err) {
     console.error('Error en login:', err)
     let mensajeError = 'Error al iniciar sesión'
+    
     if (err.response) {
       const backendMessage = err.response.data?.message || err.response.data?.error
       if (backendMessage) {
@@ -117,6 +118,7 @@ const login = async () => {
         else mensajeError = backendMessage
       }
     }
+    
     Swal.fire({
       icon: 'error',
       title: 'Error de inicio de sesión',
@@ -361,4 +363,4 @@ const login = async () => {
     transform: scale(1);
   }
 }
-</style>
+</style>, haber intenten con este este ya me funcionaba

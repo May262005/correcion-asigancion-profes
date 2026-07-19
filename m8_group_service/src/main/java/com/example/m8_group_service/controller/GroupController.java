@@ -34,7 +34,6 @@
      */
     @RestController
     @RequestMapping("/api/v1/grupos")
-    @CrossOrigin(origins = "*")
     public class GroupController {
 
         private final GroupService groupService;

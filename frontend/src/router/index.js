@@ -93,8 +93,7 @@ router.beforeEach(async (to, from, next) => {
     if (!token) return next({ name: 'login' })
 
     try {
-      await axios.post('/auth/validar-token', { token })
-
+      await axios.post('/api/auth/validar', { token })
       if (to.meta.roles && !to.meta.roles.includes(rol)) {
         switch (rol) {
           case 'estudiante': return next({ name: 'alumno-home' })
@@ -115,7 +114,7 @@ router.beforeEach(async (to, from, next) => {
   // 🔓 Si NO requiere auth y ya está logueado, redirigir
   if (token && (to.name === 'login' || to.name === 'registro')) {
     try {
-      await axios.post('/auth/validar-token', { token })
+      await axios.post('/api/auth/validar', { token })
 
       switch (rol) {
         case 'estudiante': return next({ name: 'alumno-home' })

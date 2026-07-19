@@ -155,14 +155,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import axios from '../../utils/axios-config'
 import Swal from 'sweetalert2'
 import '../../assets/styles.css'
 
 const router = useRouter()
-const BASE_URL = `http://localhost:3000`
-const API_ALUMNOS = `${BASE_URL}/estudiantes`
-const API_GRUPOS = `${BASE_URL}/grupos`
+const API_ALUMNOS = `/api/estudiantes`
+const API_GRUPOS = `/api/v1/grupos`
 
 const goBack = () => {
   router.back()

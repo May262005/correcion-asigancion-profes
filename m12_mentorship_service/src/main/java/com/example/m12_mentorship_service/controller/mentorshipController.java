@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mentorship/asesorias")
 @RequiredArgsConstructor
-public class MentorshipController {
+public class mentorshipController {
 
     private final MentorshipService mentorshipService;
 
