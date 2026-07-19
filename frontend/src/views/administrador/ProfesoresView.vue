@@ -32,6 +32,7 @@
         <div class="header-spacer"></div>
       </div>
 
+      <!-- FILTROS -->
       <div class="filtros-container">
         <div class="filtros-buttons">
           <button @click="cambiarFiltro('todos')" :class="['filtro-btn', { active: tipoVista === 'todos' }]">
@@ -193,10 +194,20 @@ import Swal from 'sweetalert2'
 import '../../assets/styles.css'
 
 const router = useRouter()
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
 const goBack = () => router.back()
 
+// ============================================================
+// CONFIGURACIÓN DE API - Gateway
+// ============================================================
 const API_URL = '/api/profesores'
 
+// ============================================================
+// ESTADO
+// ============================================================
 const profesores = ref([])
 const itemsPerPage = 5
 const currentPage = ref(1)
@@ -205,7 +216,12 @@ const modoEdicion = ref(false)
 const profesorEditando = ref(null)
 const tipoVista = ref('todos')
 const terminoBusqueda = ref('')
+const cargando = ref(false)
+const cargandoAccion = ref(false)
 
+// ============================================================
+// FORMULARIO
+// ============================================================
 const formProfesor = ref({
   nombre: '',
   apellidoPaterno: '',
@@ -216,6 +232,9 @@ const formProfesor = ref({
   esPsicologo: false,
 })
 
+// ============================================================
+// COMPUTADAS
+// ============================================================
 const profesoresFiltrados = computed(() => {
   let filtrados = profesores.value
   
@@ -241,32 +260,51 @@ const indexOfLastProfesor = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstProfesor = computed(() => indexOfLastProfesor.value - itemsPerPage)
 const currentProfesores = computed(() => profesoresFiltrados.value.slice(indexOfFirstProfesor.value, indexOfLastProfesor.value))
 
-const handlePageChange = (pageNumber) => { currentPage.value = pageNumber }
-const cambiarFiltro = (tipo) => { tipoVista.value = tipo; currentPage.value = 1 }
+// ============================================================
+// MÉTODOS
+// ============================================================
+const handlePageChange = (pageNumber) => { 
+  currentPage.value = pageNumber 
+}
 
-watch(terminoBusqueda, () => { currentPage.value = 1 })
+const cambiarFiltro = (tipo) => { 
+  tipoVista.value = tipo
+  currentPage.value = 1
+}
 
-const cargando = ref(false)
-const cargandoAccion = ref(false)
+watch(terminoBusqueda, () => { 
+  currentPage.value = 1 
+})
 
+// ============================================================
+// CRUD - OBTENER PROFESORES
+// ============================================================
 const obtenerProfesores = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_URL)
     profesores.value = res.data
-  } catch (err) {
-    console.error('Error al obtener profesores:', err)
+    console.log('Profesores cargados:', profesores.value)
+  } catch (error) {
+    console.error('Error al obtener profesores:', error)
     await Swal.fire({
       icon: 'error',
       title: 'Error',
       text: 'No se pudieron cargar los profesores',
-      confirmButtonColor: '#3ABEF9'
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#E54848',
+      width: '450px',
     })
   } finally {
     cargando.value = false
   }
 }
 
+// ============================================================
+// CRUD - ABRIR FORMULARIO
+// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   profesorEditando.value = null
@@ -282,13 +320,21 @@ const abrirFormularioNuevo = () => {
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - EDITAR PROFESOR
+// ============================================================
 const editarProfesor = (profesor) => {
   modoEdicion.value = true
   profesorEditando.value = profesor.id
+  
+  // Dividir nombre completo en partes
+  const nombreCompleto = profesor.nombreCompleto || ''
+  const partes = nombreCompleto.split(' ')
+  
   formProfesor.value = {
-    nombre: profesor.nombreCompleto.split(' ')[0] || '',
-    apellidoPaterno: profesor.nombreCompleto.split(' ')[1] || '',
-    apellidoMaterno: profesor.nombreCompleto.split(' ')[2] || '',
+    nombre: partes[0] || '',
+    apellidoPaterno: partes.slice(1, partes.length - 1).join(' ') || '',
+    apellidoMaterno: partes[partes.length - 1] || '',
     correoElectronico: profesor.correoElectronico || '',
     telefono: profesor.telefono || '',
     titulo: profesor.titulo || '',
@@ -297,16 +343,77 @@ const editarProfesor = (profesor) => {
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - GUARDAR PROFESOR
+// ============================================================
 const guardarProfesor = async () => {
+  // Validaciones
+  if (!formProfesor.value.nombre.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El nombre es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formProfesor.value.apellidoPaterno.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El apellido paterno es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formProfesor.value.correoElectronico.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El correo electrónico es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  // Validar formato de teléfono (10 dígitos)
+  if (formProfesor.value.telefono && !/^\d{10}$/.test(formProfesor.value.telefono)) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Formato inválido',
+      text: 'El teléfono debe tener 10 dígitos numéricos',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
   cargandoAccion.value = true
   try {
     const payload = {
-      nombre: formProfesor.value.nombre,
-      apellidoPaterno: formProfesor.value.apellidoPaterno || '',
-      apellidoMaterno: formProfesor.value.apellidoMaterno || '',
-      correoElectronico: formProfesor.value.correoElectronico,
-      telefono: formProfesor.value.telefono || '',
-      titulo: formProfesor.value.titulo || '',
+      nombre: formProfesor.value.nombre.trim(),
+      apellidoPaterno: formProfesor.value.apellidoPaterno.trim(),
+      apellidoMaterno: formProfesor.value.apellidoMaterno.trim() || '',
+      correoElectronico: formProfesor.value.correoElectronico.trim(),
+      telefono: formProfesor.value.telefono.trim() || '',
+      titulo: formProfesor.value.titulo.trim() || '',
       esPsicologo: formProfesor.value.esPsicologo || false
     }
 
@@ -317,7 +424,11 @@ const guardarProfesor = async () => {
         title: '¡Actualizado!',
         text: 'Profesor actualizado correctamente',
         showConfirmButton: false,
-        timer: 2000
+        timer: 2000,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
       })
     } else {
       await axios.post(API_URL, payload)
@@ -326,30 +437,35 @@ const guardarProfesor = async () => {
         title: '¡Agregado!',
         text: 'Profesor agregado correctamente',
         showConfirmButton: false,
-        timer: 2000
+        timer: 2000,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
       })
     }
     cerrarFormulario()
     await obtenerProfesores()
-  } catch (err) {
-    console.error('Error al guardar profesor:', err)
+  } catch (error) {
+    console.error('Error al guardar profesor:', error)
     await Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: err.response?.data?.message || 'Error al guardar',
-      confirmButtonColor: '#3ABEF9'
+      text: error.response?.data?.message || 'Error al guardar el profesor',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#E54848',
+      width: '500px',
     })
   } finally {
     cargandoAccion.value = false
   }
 }
 
-const cerrarFormulario = () => {
-  mostrarFormulario.value = false
-  modoEdicion.value = false
-  profesorEditando.value = null
-}
-
+// ============================================================
+// CRUD - ELIMINAR PROFESOR
+// ============================================================
 const eliminarProfesor = async (id) => {
   const profesor = profesores.value.find(p => p.id === id)
   const tipo = profesor?.esPsicologo ? 'psicólogo' : 'profesor'
@@ -362,7 +478,11 @@ const eliminarProfesor = async (id) => {
     confirmButtonText: 'Sí, eliminar',
     cancelButtonText: 'Cancelar',
     confirmButtonColor: '#E54848',
-    cancelButtonColor: '#88B7F3'
+    cancelButtonColor: '#88B7F3',
+    background: '#ffffff',
+    color: '#213547',
+    iconColor: '#E54848',
+    width: '500px',
   })
 
   if (confirm.isConfirmed) {
@@ -374,16 +494,28 @@ const eliminarProfesor = async (id) => {
         title: 'Eliminado',
         text: `${tipo} eliminado correctamente`,
         showConfirmButton: false,
-        timer: 2000
+        timer: 2000,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
       })
       await obtenerProfesores()
-    } catch (err) {
-      console.error('Error al eliminar:', err)
+      
+      if (currentProfesores.value.length === 0 && currentPage.value > 1) {
+        currentPage.value--
+      }
+    } catch (error) {
+      console.error('Error al eliminar:', error)
       await Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo eliminar',
-        confirmButtonColor: '#3ABEF9'
+        text: error.response?.data?.message || 'No se pudo eliminar el profesor',
+        confirmButtonColor: '#3ABEF9',
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#E54848',
+        width: '500px',
       })
     } finally {
       cargandoAccion.value = false
@@ -391,6 +523,18 @@ const eliminarProfesor = async (id) => {
   }
 }
 
+// ============================================================
+// CRUD - CERRAR FORMULARIO
+// ============================================================
+const cerrarFormulario = () => {
+  mostrarFormulario.value = false
+  modoEdicion.value = false
+  profesorEditando.value = null
+}
+
+// ============================================================
+// CICLO DE VIDA
+// ============================================================
 onMounted(() => {
   obtenerProfesores()
 })
@@ -563,6 +707,73 @@ onMounted(() => {
   color: #64748b;
 }
 
+/* =======================
+   LOADING
+======================= */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* =======================
+   EMPTY STATE
+======================= */
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
+}
+
+/* Tarjeta blanca */
 .profesores-card {
   background: white;
   border-radius: 20px;
@@ -673,6 +884,9 @@ onMounted(() => {
   margin-right: 8px;
 }
 
+/* =======================
+   MODAL (ESTILO PERFIL)
+======================= */
 .form-overlay {
   position: fixed;
   top: 0;
@@ -815,6 +1029,7 @@ onMounted(() => {
   background: #f1f5f9;
 }
 
+/* Responsive */
 @media (max-width: 768px) {
   .profesores-main {
     padding: 0 15px;

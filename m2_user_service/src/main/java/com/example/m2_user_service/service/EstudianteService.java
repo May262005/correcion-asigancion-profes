@@ -29,7 +29,13 @@ public class EstudianteService {
         usuario.setApellidoPaterno(dto.getApellidoPaterno() != null ? dto.getApellidoPaterno() : "");
         usuario.setApellidoMaterno(dto.getApellidoMaterno() != null ? dto.getApellidoMaterno() : "");
         usuario.setCorreoElectronico(dto.getCorreoElectronico());
-        usuario.setContrasena(passwordEncoder.encode("UTEQ123"));
+        
+        // ✅ SI VIENE CONTRASEÑA DEL FRONTEND, USA ESA, SI NO USA LA DEFAULT
+        String password = (dto.getContrasena() != null && !dto.getContrasena().isEmpty()) 
+            ? dto.getContrasena() 
+            : "UTEQ123";
+        usuario.setContrasena(passwordEncoder.encode(password));
+        
         usuario.setRol(RolUsuario.estudiante);
         Usuario savedUser = usuarioRepository.save(usuario);
 

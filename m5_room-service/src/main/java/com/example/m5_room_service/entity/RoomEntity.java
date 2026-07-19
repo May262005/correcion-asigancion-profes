@@ -1,34 +1,91 @@
 package com.example.m5_room_service.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 
 @Entity
-@Table(name = "aula") // Mantiene el nombre exacto de la tabla en tu base de datos
-@Data // Lombok genera automáticamente los getters, setters, toString, equals y hashCode
+@Table(name = "aula")
 public class RoomEntity {
-
-    // --- COLUMNAS PRINCIPALES ---
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Equivalente a PrimaryGeneratedColumn() (INT/INT4 autoincremental)
+    private Long id;
 
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(length = 20) // Por defecto acepta nulos (nullable = true)
+    @Column(length = 20)
     private String abreviatura;
 
-    @Column(length = 50) // Campo de ubicación
+    @Column(length = 50)
     private String ubicacion;
 
     @Column(nullable = false)
     private Integer capacidad;
 
-    // --- RELACIÓN CON EDIFICIO EN MICROSERVICIOS ---
-    // En lugar de mapear el objeto complejo Building, guardamos directamente
-    // su identificador como un campo numérico Long.
     @Column(name = "id_edificio", nullable = false)
     private Long idEdificio;
+
+    // ============================================================
+    // CONSTRUCTORES
+    // ============================================================
+    public RoomEntity() {}
+
+    public RoomEntity(String nombre, String abreviatura, String ubicacion, Integer capacidad, Long idEdificio) {
+        this.nombre = nombre;
+        this.abreviatura = abreviatura;
+        this.ubicacion = ubicacion;
+        this.capacidad = capacidad;
+        this.idEdificio = idEdificio;
+    }
+
+    // ============================================================
+    // GETTERS Y SETTERS
+    // ============================================================
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getAbreviatura() {
+        return abreviatura;
+    }
+
+    public void setAbreviatura(String abreviatura) {
+        this.abreviatura = abreviatura;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
+
+    public Integer getCapacidad() {
+        return capacidad;
+    }
+
+    public void setCapacidad(Integer capacidad) {
+        this.capacidad = capacidad;
+    }
+
+    public Long getIdEdificio() {
+        return idEdificio;
+    }
+
+    public void setIdEdificio(Long idEdificio) {
+        this.idEdificio = idEdificio;
+    }
 }

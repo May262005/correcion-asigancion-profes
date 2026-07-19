@@ -103,27 +103,27 @@
           <form @submit.prevent="guardarAlumno">
             <div class="form-grid-layout">
               <div class="input-group">
-                <label>Nombre</label>
-                <input v-model="formAlumno.nombre" type="text" required />
+                <label>Nombre *</label>
+                <input v-model="formAlumno.nombre" type="text" required placeholder="Nombre del alumno" />
               </div>
 
               <div class="input-group">
-                <label>Apellido Paterno</label>
-                <input v-model="formAlumno.apellidoPaterno" type="text" required />
+                <label>Apellido Paterno *</label>
+                <input v-model="formAlumno.apellidoPaterno" type="text" required placeholder="Apellido paterno" />
               </div>
 
               <div class="input-group">
                 <label>Apellido Materno</label>
-                <input v-model="formAlumno.apellidoMaterno" type="text" />
+                <input v-model="formAlumno.apellidoMaterno" type="text" placeholder="Apellido materno" />
               </div>
 
               <div class="input-group">
-                <label>Correo Electrónico</label>
-                <input v-model="formAlumno.correoElectronico" type="email" required />
+                <label>Correo Electrónico *</label>
+                <input v-model="formAlumno.correoElectronico" type="email" required placeholder="correo@ejemplo.com" />
               </div>
 
               <div class="input-group">
-                <label>Grupo</label>
+                <label>Grupo *</label>
                 <select v-model="formAlumno.idGrupo" required>
                   <option disabled value="">Selecciona un grupo</option>
                   <option v-for="g in grupos" :key="g.id" :value="g.id">
@@ -133,13 +133,13 @@
               </div>
 
               <div class="input-group">
-                <label>Matrícula</label>
-                <input v-model="formAlumno.matricula" type="text" required />
+                <label>Matrícula *</label>
+                <input v-model="formAlumno.matricula" type="text" required placeholder="Número de matrícula" />
               </div>
             </div>
 
             <div class="modal-footer">
-              <button type="submit" class="btn-primary">Guardar</button>
+              <button type="submit" class="btn-primary">{{ modoEdicion ? 'Actualizar' : 'Guardar' }}</button>
               <button type="button" class="btn-secondary" @click="cerrarFormulario">Cancelar</button>
             </div>
           </form>
@@ -158,20 +158,33 @@ import '../../assets/styles.css'
 
 const router = useRouter()
 
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
 const goBack = () => router.back()
 
-// ✅ URL del API Gateway
+// ============================================================
+// CONFIGURACIÓN DE API - Gateway
+// ============================================================
 const API_ESTUDIANTES = '/api/estudiantes'
 const API_GRUPOS = '/api/v1/grupos'
 
+// ============================================================
+// ESTADO
+// ============================================================
 const alumnos = ref([])
 const grupos = ref([])
-const itemsPerPage = 3
+const itemsPerPage = 5
 const currentPage = ref(1)
 const mostrarFormulario = ref(false)
 const modoEdicion = ref(false)
 const alumnoEditando = ref(null)
+const cargando = ref(false)
+const cargandoAccion = ref(false)
 
+// ============================================================
+// FORMULARIO
+// ============================================================
 const formAlumno = ref({
   nombre: '',
   apellidoPaterno: '',
@@ -181,47 +194,78 @@ const formAlumno = ref({
   matricula: '',
 })
 
+// ============================================================
+// COMPUTADAS
+// ============================================================
 const totalPages = computed(() => Math.ceil(alumnos.value.length / itemsPerPage))
 const indexOfLastAlumno = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstAlumno = computed(() => indexOfLastAlumno.value - itemsPerPage)
 const currentAlumnos = computed(() => alumnos.value.slice(indexOfFirstAlumno.value, indexOfLastAlumno.value))
-const handlePageChange = (pageNumber) => (currentPage.value = pageNumber)
 
-const cargando = ref(false)
-const cargandoAccion = ref(false)
+const handlePageChange = (pageNumber) => {
+  currentPage.value = pageNumber
+}
 
+// ============================================================
+// CRUD - OBTENER ALUMNOS
+// ============================================================
 const obtenerAlumnos = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_ESTUDIANTES)
     alumnos.value = res.data
-  } catch (err) {
-    console.error('Error al obtener alumnos:', err)
+    console.log('Alumnos cargados:', alumnos.value)
+  } catch (error) {
+    console.error('Error al obtener alumnos:', error)
     await Swal.fire({
       icon: 'error',
       title: 'Error',
       text: 'No se pudieron cargar los alumnos',
-      confirmButtonColor: '#3ABEF9'
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#E54848',
+      width: '450px',
     })
   } finally {
     cargando.value = false
   }
 }
 
+// ============================================================
+// CRUD - OBTENER GRUPOS
+// ============================================================
 const obtenerGrupos = async () => {
   try {
     const res = await axios.get(API_GRUPOS)
     grupos.value = res.data
-  } catch (err) {
-    console.error('Error al obtener grupos:', err)
+    console.log('Grupos cargados:', grupos.value)
+  } catch (error) {
+    console.error('Error al obtener grupos:', error)
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Aviso',
+      text: 'No se pudieron cargar los grupos. Los alumnos se mostrarán sin grupo.',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
   }
 }
 
+// ============================================================
+// CRUD - OBTENER NOMBRE DEL GRUPO
+// ============================================================
 const obtenerNombreGrupo = (id) => {
   const grupo = grupos.value.find((g) => g.id === id)
   return grupo ? grupo.nombre : 'Sin grupo'
 }
 
+// ============================================================
+// CRUD - ABRIR FORMULARIO
+// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   alumnoEditando.value = null
@@ -236,13 +280,21 @@ const abrirFormularioNuevo = () => {
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - EDITAR ALUMNO
+// ============================================================
 const editarAlumno = (alumno) => {
   modoEdicion.value = true
   alumnoEditando.value = alumno.id
+  
+  // Dividir nombre completo en partes
+  const nombreCompleto = alumno.nombreCompleto || ''
+  const partes = nombreCompleto.split(' ')
+  
   formAlumno.value = {
-    nombre: alumno.nombreCompleto.split(' ')[0] || '',
-    apellidoPaterno: alumno.nombreCompleto.split(' ')[1] || '',
-    apellidoMaterno: alumno.nombreCompleto.split(' ')[2] || '',
+    nombre: partes[0] || '',
+    apellidoPaterno: partes.slice(1, partes.length - 1).join(' ') || '',
+    apellidoMaterno: partes[partes.length - 1] || '',
     correoElectronico: alumno.correoElectronico || '',
     idGrupo: alumno.idGrupo || '',
     matricula: alumno.matricula || '',
@@ -250,16 +302,90 @@ const editarAlumno = (alumno) => {
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - GUARDAR ALUMNO
+// ============================================================
 const guardarAlumno = async () => {
+  // Validaciones
+  if (!formAlumno.value.nombre.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El nombre del alumno es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAlumno.value.apellidoPaterno.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El apellido paterno es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAlumno.value.correoElectronico.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El correo electrónico es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAlumno.value.matricula.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'La matrícula es obligatoria',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAlumno.value.idGrupo) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'Debes seleccionar un grupo',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
   cargandoAccion.value = true
   try {
     const payload = {
-      nombre: formAlumno.value.nombre,
-      apellidoPaterno: formAlumno.value.apellidoPaterno || '',
-      apellidoMaterno: formAlumno.value.apellidoMaterno || '',
-      correoElectronico: formAlumno.value.correoElectronico,
+      nombre: formAlumno.value.nombre.trim(),
+      apellidoPaterno: formAlumno.value.apellidoPaterno.trim(),
+      apellidoMaterno: formAlumno.value.apellidoMaterno.trim() || '',
+      correoElectronico: formAlumno.value.correoElectronico.trim(),
       idGrupo: parseInt(formAlumno.value.idGrupo),
-      matricula: formAlumno.value.matricula
+      matricula: formAlumno.value.matricula.trim()
     }
 
     if (modoEdicion.value) {
@@ -269,7 +395,11 @@ const guardarAlumno = async () => {
         title: '¡Actualizado!',
         text: 'Alumno actualizado correctamente',
         showConfirmButton: false,
-        timer: 2000
+        timer: 2000,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
       })
     } else {
       await axios.post(API_ESTUDIANTES, payload)
@@ -278,24 +408,35 @@ const guardarAlumno = async () => {
         title: '¡Agregado!',
         text: 'Alumno agregado correctamente',
         showConfirmButton: false,
-        timer: 2000
+        timer: 2000,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
       })
     }
     cerrarFormulario()
     await obtenerAlumnos()
-  } catch (err) {
-    console.error('Error guardando alumno:', err)
+  } catch (error) {
+    console.error('Error guardando alumno:', error)
     await Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: err.response?.data?.message || 'Error guardando alumno',
-      confirmButtonColor: '#3ABEF9'
+      text: error.response?.data?.message || 'Error al guardar el alumno',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#E54848',
+      width: '500px',
     })
   } finally {
     cargandoAccion.value = false
   }
 }
 
+// ============================================================
+// CRUD - ELIMINAR ALUMNO
+// ============================================================
 const eliminarAlumno = async (id) => {
   const confirm = await Swal.fire({
     title: '¿Eliminar alumno?',
@@ -305,7 +446,11 @@ const eliminarAlumno = async (id) => {
     confirmButtonText: 'Sí, eliminar',
     cancelButtonText: 'Cancelar',
     confirmButtonColor: '#E54848',
-    cancelButtonColor: '#88B7F3'
+    cancelButtonColor: '#88B7F3',
+    background: '#ffffff',
+    color: '#213547',
+    iconColor: '#E54848',
+    width: '500px',
   })
 
   if (confirm.isConfirmed) {
@@ -317,16 +462,28 @@ const eliminarAlumno = async (id) => {
         title: 'Eliminado',
         text: 'Alumno eliminado correctamente',
         showConfirmButton: false,
-        timer: 2000
+        timer: 2000,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
       })
       await obtenerAlumnos()
-    } catch (err) {
-      console.error('Error al eliminar alumno:', err)
+      
+      if (currentAlumnos.value.length === 0 && currentPage.value > 1) {
+        currentPage.value--
+      }
+    } catch (error) {
+      console.error('Error al eliminar alumno:', error)
       await Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo eliminar el alumno',
-        confirmButtonColor: '#3ABEF9'
+        text: error.response?.data?.message || 'No se pudo eliminar el alumno',
+        confirmButtonColor: '#3ABEF9',
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#E54848',
+        width: '500px',
       })
     } finally {
       cargandoAccion.value = false
@@ -334,12 +491,18 @@ const eliminarAlumno = async (id) => {
   }
 }
 
+// ============================================================
+// CRUD - CERRAR FORMULARIO
+// ============================================================
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   modoEdicion.value = false
   alumnoEditando.value = null
 }
 
+// ============================================================
+// CICLO DE VIDA
+// ============================================================
 onMounted(() => {
   obtenerAlumnos()
   obtenerGrupos()
@@ -504,6 +667,72 @@ onMounted(() => {
 
 .btn-primary i {
   margin-right: 8px;
+}
+
+/* =======================
+   LOADING
+======================= */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* =======================
+   EMPTY STATE
+======================= */
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
 }
 
 /* =======================
@@ -710,6 +939,14 @@ onMounted(() => {
   
   .btn-accion {
     width: auto;
+  }
+  
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+  
+  .modal-footer button {
+    width: 100%;
   }
 }
 </style>

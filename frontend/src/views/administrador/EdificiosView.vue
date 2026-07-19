@@ -65,7 +65,7 @@
                       : '-'
                   }}
                 </td>
-                <td :data-label="'División'">{{ obtenerNombreDivision(edificio.id_division) }}</td>
+                <td :data-label="'División'">{{ obtenerNombreDivision(edificio.idDivision) }}</td>
                 <td :data-label="'Acciones'">
                   <button class="btn-secondary btn-accion" @click="editarEdificio(edificio)">Editar</button>
                   <button class="btn-danger btn-accion" @click="eliminarEdificio(edificio.id)">Eliminar</button>
@@ -114,17 +114,17 @@
           <form @submit.prevent="guardarEdificio">
             <div class="form-grid-layout">
               <div class="input-group full-width">
-                <label>Nombre del edificio</label>
-                <input v-model="formEdificio.nombre" type="text" placeholder="Nombre del edificio" required />
+                <label>Nombre del edificio *</label>
+                <input v-model="formEdificio.nombre" type="text" placeholder="Nombre del edificio" required maxlength="150" />
               </div>
 
               <div class="input-group">
                 <label>Abreviatura</label>
-                <input v-model="formEdificio.abreviatura" type="text" placeholder="Abreviatura" maxlength="10" />
+                <input v-model="formEdificio.abreviatura" type="text" placeholder="Abreviatura" maxlength="20" />
               </div>
 
               <div class="input-group">
-                <label>Tipo</label>
+                <label>Tipo *</label>
                 <select v-model="formEdificio.tipo" required>
                   <option value="" disabled>Selecciona el tipo</option>
                   <option value="especialidad">Especialidad</option>
@@ -133,8 +133,8 @@
               </div>
 
               <div class="input-group full-width">
-                <label>División</label>
-                <select v-model.number="formEdificio.id_division" required>
+                <label>División *</label>
+                <select v-model.number="formEdificio.idDivision" required>
                   <option value="" disabled>Seleccione una división</option>
                   <option v-for="division in divisiones" :key="division.id" :value="division.id">
                     {{ division.nombre }}
@@ -162,30 +162,46 @@ import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const API_EDIFICIOS = `http://localhost:3000/edificios`
-const API_DIVISIONES = `http://localhost:3000/divisiones`
 
+// ============================================================
+// CONFIGURACIÓN DE API - Gateway
+// ============================================================
+const API_EDIFICIOS = 'http://localhost:8080/edificios'
+const API_DIVISIONES = 'http://localhost:8080/api/divisiones'
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
 const goBack = () => {
   router.back()
 }
 
+// ============================================================
+// ESTADO
+// ============================================================
 const edificios = ref([])
 const divisiones = ref([])
 const cargando = ref(false) 
 const cargandoAccion = ref(false)
-const itemsPerPage = 3
+const itemsPerPage = 5
 const currentPage = ref(1)
 const mostrarFormulario = ref(false)
 const modoEdicion = ref(false)
 const edificioEditando = ref(null)
 
+// ============================================================
+// FORMULARIO
+// ============================================================
 const formEdificio = ref({
   nombre: '',
   abreviatura: '',
   tipo: '',
-  id_division: ''
+  idDivision: ''
 })
 
+// ============================================================
+// COMPUTADAS
+// ============================================================
 const totalPages = computed(() => Math.ceil(edificios.value.length / itemsPerPage))
 const indexOfLastEdificio = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstEdificio = computed(() => indexOfLastEdificio.value - itemsPerPage)
@@ -197,30 +213,38 @@ const handlePageChange = (pageNumber) => {
   currentPage.value = pageNumber
 }
 
+// ============================================================
+// CRUD - OBTENER DIVISIONES
+// ============================================================
 const obtenerDivisiones = async () => {
   try {
     const res = await axios.get(API_DIVISIONES)
     divisiones.value = res.data
+    console.log('Divisiones cargadas:', divisiones.value)
   } catch (error) {
     console.error('Error al obtener divisiones:', error)
     await Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudieron cargar las divisiones',
+      icon: 'warning',
+      title: 'Aviso',
+      text: 'No se pudieron cargar las divisiones. Los edificios se mostrarán sin división.',
       confirmButtonColor: '#3ABEF9',
       background: '#ffffff',
       color: '#213547',
-      iconColor: '#E54848',
+      iconColor: '#F59E0B',
       width: '450px',
     })
   }
 }
 
+// ============================================================
+// CRUD - OBTENER EDIFICIOS
+// ============================================================
 const obtenerEdificios = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_EDIFICIOS)
     edificios.value = res.data
+    console.log('Edificios cargados:', edificios.value)
   } catch (error) {
     console.error('Error al obtener edificios:', error)
     await Swal.fire({
@@ -238,6 +262,18 @@ const obtenerEdificios = async () => {
   }
 }
 
+// ============================================================
+// CRUD - OBTENER NOMBRE DE DIVISIÓN
+// ============================================================
+const obtenerNombreDivision = (idDivision) => {
+  if (!idDivision) return '-'
+  const division = divisiones.value.find(d => d.id === idDivision)
+  return division ? division.nombre : '-'
+}
+
+// ============================================================
+// CRUD - ABRIR FORMULARIO
+// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   edificioEditando.value = null
@@ -245,11 +281,14 @@ const abrirFormularioNuevo = () => {
     nombre: '',
     abreviatura: '',
     tipo: '',
-    id_division: ''
+    idDivision: ''
   }
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - EDITAR EDIFICIO
+// ============================================================
 const editarEdificio = (edificio) => {
   modoEdicion.value = true
   edificioEditando.value = edificio.id
@@ -257,17 +296,69 @@ const editarEdificio = (edificio) => {
     nombre: edificio.nombre || '',
     abreviatura: edificio.abreviatura || '',
     tipo: edificio.tipo || '',
-    id_division: edificio.id_division || ''
+    idDivision: edificio.idDivision || ''
   }
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - GUARDAR EDIFICIO
+// ============================================================
 const guardarEdificio = async () => {
+  // Validaciones
+  if (!formEdificio.value.nombre.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El nombre del edificio es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formEdificio.value.tipo) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'Debes seleccionar un tipo',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formEdificio.value.idDivision) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'Debes seleccionar una división',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
   cargandoAccion.value = true
   try {
+    const payload = {
+      nombre: formEdificio.value.nombre.trim(),
+      abreviatura: formEdificio.value.abreviatura.trim() || '',
+      tipo: formEdificio.value.tipo,
+      idDivision: parseInt(formEdificio.value.idDivision)
+    }
+
     if (modoEdicion.value) {
-      await axios.patch(`${API_EDIFICIOS}/${edificioEditando.value}`, formEdificio.value)
-      cargandoAccion.value = false
+      await axios.patch(`${API_EDIFICIOS}/${edificioEditando.value}`, payload)
       await Swal.fire({
         icon: 'success',
         title: '¡Actualizado!',
@@ -280,8 +371,7 @@ const guardarEdificio = async () => {
         width: '450px',
       })
     } else {
-      await axios.post(API_EDIFICIOS, formEdificio.value)
-      cargandoAccion.value = false
+      await axios.post(API_EDIFICIOS, payload)
       await Swal.fire({
         icon: 'success',
         title: '¡Agregado!',
@@ -297,7 +387,6 @@ const guardarEdificio = async () => {
     cerrarFormulario()
     await obtenerEdificios()
   } catch (error) {
-    cargandoAccion.value = false
     console.error('Error al guardar edificio:', error)
     await Swal.fire({
       icon: 'error',
@@ -307,13 +396,16 @@ const guardarEdificio = async () => {
       background: '#ffffff',
       color: '#213547',
       iconColor: '#E54848',
-      width: '450px',
+      width: '500px',
     })
   } finally {
     cargandoAccion.value = false
   }
 }
 
+// ============================================================
+// CRUD - ELIMINAR EDIFICIO
+// ============================================================
 const eliminarEdificio = async (id) => {
   const confirm = await Swal.fire({
     title: '¿Eliminar edificio?',
@@ -334,7 +426,6 @@ const eliminarEdificio = async (id) => {
     cargandoAccion.value = true
     try {
       await axios.delete(`${API_EDIFICIOS}/${id}`)
-      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: 'Eliminado',
@@ -347,14 +438,15 @@ const eliminarEdificio = async (id) => {
         width: '450px',
       })
       await obtenerEdificios()
-      if (currentEdificios.value.length === 0 && currentPage.value > 1) currentPage.value--
+      if (currentEdificios.value.length === 0 && currentPage.value > 1) {
+        currentPage.value--
+      }
     } catch (error) {
-      cargandoAccion.value = false
       console.error('Error al eliminar edificio:', error)
       await Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo eliminar el edificio. Puede estar asociado a otras entidades.',
+        text: error.response?.data?.message || 'No se pudo eliminar el edificio',
         confirmButtonColor: '#3ABEF9',
         background: '#ffffff',
         color: '#213547',
@@ -367,17 +459,18 @@ const eliminarEdificio = async (id) => {
   }
 }
 
+// ============================================================
+// CRUD - CERRAR FORMULARIO
+// ============================================================
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   modoEdicion.value = false
   edificioEditando.value = null
 }
 
-const obtenerNombreDivision = (id_division) => {
-  const division = divisiones.value.find(d => d.id === id_division)
-  return division ? division.nombre : '-'
-}
-
+// ============================================================
+// CICLO DE VIDA
+// ============================================================
 onMounted(() => {
   obtenerDivisiones()
   obtenerEdificios()
@@ -536,6 +629,72 @@ onMounted(() => {
 
 .btn-primary i {
   margin-right: 8px;
+}
+
+/* =======================
+   LOADING
+======================= */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* =======================
+   EMPTY STATE
+======================= */
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
 }
 
 /* MODAL */

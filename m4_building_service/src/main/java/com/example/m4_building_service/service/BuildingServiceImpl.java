@@ -13,12 +13,10 @@ public class BuildingServiceImpl implements BuildingService {
 
     private final BuildingRepo buildingRepo;
 
-    // Inyección de dependencias por constructor limpia y única
     public BuildingServiceImpl(BuildingRepo buildingRepo) {
         this.buildingRepo = buildingRepo;
     }
 
-    // CREATE (Adaptado al DTO unificado BuildingDto.Create y a la nueva estructura)
     @Override
     @Transactional
     public BuildingEntity create(BuildingDto.Create createBuildingDto) {
@@ -26,19 +24,16 @@ public class BuildingServiceImpl implements BuildingService {
         building.setNombre(createBuildingDto.getNombre());
         building.setAbreviatura(createBuildingDto.getAbreviatura());
         building.setTipo(createBuildingDto.getTipo());
-        building.setIdDivision(createBuildingDto.getIdDivision()); // Mapeamos el ID numérico directo
-        
+        building.setIdDivision(createBuildingDto.getIdDivision());
         return buildingRepo.save(building);
     }
 
-    // READ ALL
     @Override
     @Transactional(readOnly = true)
     public List<BuildingEntity> findAll() {
         return buildingRepo.findAll();
     }
 
-    // READ ONE (Soluciona el error de tipos usando el parámetro Long id)
     @Override
     @Transactional(readOnly = true)
     public BuildingEntity findOne(Long id) {
@@ -46,13 +41,11 @@ public class BuildingServiceImpl implements BuildingService {
                 .orElseThrow(() -> new RuntimeException("Edificio con ID \"" + id + "\" no encontrado."));
     }
 
-    // UPDATE (Adaptado al DTO unificado BuildingDto.Update y de forma selectiva)
     @Override
     @Transactional
     public BuildingEntity update(Long id, BuildingDto.Update updateBuildingDto) {
-        BuildingEntity building = findOne(id); // Si no existe, lanza la excepción de findOne automáticamente
+        BuildingEntity building = findOne(id);
 
-        // Mapeo seguro contra valores nulos (Equivalente al merge de TypeORM)
         if (updateBuildingDto.getNombre() != null) {
             building.setNombre(updateBuildingDto.getNombre());
         }
@@ -69,7 +62,6 @@ public class BuildingServiceImpl implements BuildingService {
         return buildingRepo.save(building);
     }
 
-    // DELETE (Soluciona el error usando existsById y deleteById de forma segura con Long)
     @Override
     @Transactional
     public void remove(Long id) {
