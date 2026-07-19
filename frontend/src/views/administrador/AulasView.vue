@@ -1,4 +1,4 @@
- <template>
+<template>
   <div>
     <nav class="nav">
       <div class="nav-container">
@@ -58,8 +58,8 @@
                 <td :data-label="'Nombre'">{{ aula.nombre }}</td>
                 <td :data-label="'Abreviatura'">{{ aula.abreviatura || '-' }}</td>
                 <td :data-label="'Capacidad'">{{ aula.capacidad }}</td>
-                <td :data-label="'Ubicación'">{{ aula.ubicacion }}</td>
-                <td :data-label="'Edificio'">{{ aula.edificio?.nombre || '-' }}</td>
+                <td :data-label="'Ubicación'">{{ aula.ubicacion || '-' }}</td>
+                <td :data-label="'Edificio'">{{ obtenerNombreEdificio(aula.idEdificio) }}</td>
                 <td :data-label="'Acciones'">
                   <button class="btn-secondary btn-accion" @click="editarAula(aula)">Editar</button>
                   <button class="btn-danger btn-accion" @click="eliminarAula(aula.id)">Eliminar</button>
@@ -96,7 +96,7 @@
       </div>
     </main>
 
-    <!-- MODAL (ESTILO PERFIL) -->
+    <!-- MODAL -->
     <div v-if="mostrarFormulario" class="form-overlay" @click.self="cerrarFormulario">
       <div class="form-modal">
         <div class="modal-header">
@@ -108,22 +108,22 @@
           <form @submit.prevent="guardarAula">
             <div class="form-grid-layout">
               <div class="input-group">
-                <label>Nombre del aula</label>
-                <input v-model="formAula.nombre" type="text" placeholder="Nombre del aula" required />
+                <label>Nombre del aula *</label>
+                <input v-model="formAula.nombre" type="text" placeholder="Nombre del aula" required maxlength="100" />
               </div>
 
               <div class="input-group">
                 <label>Abreviatura</label>
-                <input v-model="formAula.abreviatura" type="text" placeholder="Abreviatura (opcional)" maxlength="10" />
+                <input v-model="formAula.abreviatura" type="text" placeholder="Abreviatura (opcional)" maxlength="20" />
               </div>
 
               <div class="input-group">
-                <label>Capacidad</label>
-                <input v-model.number="formAula.capacidad" type="number" placeholder="Capacidad" required />
+                <label>Capacidad *</label>
+                <input v-model.number="formAula.capacidad" type="number" placeholder="Capacidad" required min="1" />
               </div>
 
               <div class="input-group">
-                <label>Ubicación</label>
+                <label>Ubicación *</label>
                 <select v-model="formAula.ubicacion" required>
                   <option value="" disabled>Seleccione ubicación</option>
                   <option value="Planta alta">Planta alta</option>
@@ -132,8 +132,8 @@
               </div>
 
               <div class="input-group full-width">
-                <label>Edificio</label>
-                <select v-model.number="formAula.id_edificio" required>
+                <label>Edificio *</label>
+                <select v-model.number="formAula.idEdificio" required>
                   <option value="" disabled>Seleccione un edificio</option>
                   <option v-for="edificio in edificios" :key="edificio.id" :value="edificio.id">
                     {{ edificio.nombre }}
@@ -161,34 +161,48 @@ import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const BASE_URL = `http://localhost:3000`
 
-const API_AULAS = `${BASE_URL}/aulas`
-const API_EDIFICIOS = `${BASE_URL}/edificios`
+// ============================================================
+// CONFIGURACIÓN DE API - Gateway
+// ============================================================
+const API_AULAS = 'http://localhost:8080/aulas'
+const API_EDIFICIOS = 'http://localhost:8080/edificios'
 
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
 const goBack = () => {
   router.back()
 }
 
+// ============================================================
+// ESTADO
+// ============================================================
 const aulas = ref([])
 const edificios = ref([])
 const cargando = ref(false)
 const cargandoAccion = ref(false)
 
-const itemsPerPage = 3
+const itemsPerPage = 5
 const currentPage = ref(1)
 const mostrarFormulario = ref(false)
 const modoEdicion = ref(false)
 const aulaEditando = ref(null)
 
+// ============================================================
+// FORMULARIO
+// ============================================================
 const formAula = ref({
   nombre: '',
   abreviatura: '',
   capacidad: '',
   ubicacion: '',
-  id_edificio: ''
+  idEdificio: ''
 })
 
+// ============================================================
+// COMPUTADAS
+// ============================================================
 const totalPages = computed(() => Math.ceil(aulas.value.length / itemsPerPage))
 const indexOfLastAula = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstAula = computed(() => indexOfLastAula.value - itemsPerPage)
@@ -198,11 +212,15 @@ const handlePageChange = (pageNumber) => {
   currentPage.value = pageNumber
 }
 
+// ============================================================
+// CRUD - OBTENER AULAS
+// ============================================================
 const obtenerAulas = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_AULAS)
     aulas.value = res.data
+    console.log('Aulas cargadas:', aulas.value)
   } catch (error) {
     console.error('Error al obtener aulas:', error)
     await Swal.fire({
@@ -220,25 +238,41 @@ const obtenerAulas = async () => {
   }
 }
 
+// ============================================================
+// CRUD - OBTENER EDIFICIOS
+// ============================================================
 const obtenerEdificios = async () => {
   try {
     const res = await axios.get(API_EDIFICIOS)
     edificios.value = res.data
+    console.log('Edificios cargados:', edificios.value)
   } catch (error) {
     console.error('Error al obtener edificios:', error)
     await Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudieron cargar los edificios',
+      icon: 'warning',
+      title: 'Aviso',
+      text: 'No se pudieron cargar los edificios. Las aulas se mostrarán sin edificio.',
       confirmButtonColor: '#3ABEF9',
       background: '#ffffff',
       color: '#213547',
-      iconColor: '#E54848',
+      iconColor: '#F59E0B',
       width: '450px',
     })
   }
 }
 
+// ============================================================
+// CRUD - OBTENER NOMBRE DE EDIFICIO
+// ============================================================
+const obtenerNombreEdificio = (idEdificio) => {
+  if (!idEdificio) return '-'
+  const edificio = edificios.value.find(e => e.id === idEdificio)
+  return edificio ? edificio.nombre : '-'
+}
+
+// ============================================================
+// CRUD - ABRIR FORMULARIO
+// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   aulaEditando.value = null
@@ -247,11 +281,14 @@ const abrirFormularioNuevo = () => {
     abreviatura: '', 
     capacidad: '', 
     ubicacion: '', 
-    id_edificio: '' 
+    idEdificio: '' 
   }
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - EDITAR AULA
+// ============================================================
 const editarAula = (aula) => {
   modoEdicion.value = true
   aulaEditando.value = aula.id
@@ -260,17 +297,84 @@ const editarAula = (aula) => {
     abreviatura: aula.abreviatura || '',
     capacidad: aula.capacidad || '',
     ubicacion: aula.ubicacion || '',
-    id_edificio: aula.id_edificio || aula.edificio?.id || ''
+    idEdificio: aula.idEdificio || ''
   }
   mostrarFormulario.value = true
 }
 
+// ============================================================
+// CRUD - GUARDAR AULA
+// ============================================================
 const guardarAula = async () => {
+  // Validaciones
+  if (!formAula.value.nombre.trim()) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'El nombre del aula es obligatorio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAula.value.capacidad || formAula.value.capacidad < 1) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'La capacidad debe ser un número mayor a 0',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAula.value.ubicacion) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'Debes seleccionar una ubicación',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
+  if (!formAula.value.idEdificio) {
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Campo requerido',
+      text: 'Debes seleccionar un edificio',
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#F59E0B',
+      width: '450px',
+    })
+    return
+  }
+
   cargandoAccion.value = true
   try {
+    const payload = {
+      nombre: formAula.value.nombre.trim(),
+      abreviatura: formAula.value.abreviatura.trim() || '',
+      capacidad: parseInt(formAula.value.capacidad),
+      ubicacion: formAula.value.ubicacion,
+      idEdificio: parseInt(formAula.value.idEdificio)
+    }
+
     if (modoEdicion.value) {
-      await axios.patch(`${API_AULAS}/${aulaEditando.value}`, formAula.value)
-      cargandoAccion.value = false
+      await axios.patch(`${API_AULAS}/${aulaEditando.value}`, payload)
       await Swal.fire({
         icon: 'success',
         title: '¡Actualizado!',
@@ -283,8 +387,7 @@ const guardarAula = async () => {
         width: '450px',
       })
     } else {
-      await axios.post(API_AULAS, formAula.value)
-      cargandoAccion.value = false
+      await axios.post(API_AULAS, payload)
       await Swal.fire({
         icon: 'success',
         title: '¡Agregado!',
@@ -300,7 +403,6 @@ const guardarAula = async () => {
     cerrarFormulario()
     await obtenerAulas()
   } catch (error) {
-    cargandoAccion.value = false
     console.error('Error al guardar aula:', error)
     await Swal.fire({
       icon: 'error',
@@ -310,13 +412,16 @@ const guardarAula = async () => {
       background: '#ffffff',
       color: '#213547',
       iconColor: '#E54848',
-      width: '450px',
+      width: '500px',
     })
   } finally {
     cargandoAccion.value = false
   }
 }
 
+// ============================================================
+// CRUD - ELIMINAR AULA
+// ============================================================
 const eliminarAula = async (id) => {
   const confirm = await Swal.fire({
     title: '¿Eliminar aula?',
@@ -330,14 +435,13 @@ const eliminarAula = async (id) => {
     background: '#ffffff',
     color: '#213547',
     iconColor: '#E54848',
-    width: '450px',
+    width: '500px',
   })
 
   if (confirm.isConfirmed) {
     cargandoAccion.value = true
     try {
       await axios.delete(`${API_AULAS}/${id}`)
-      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: 'Eliminado',
@@ -354,17 +458,16 @@ const eliminarAula = async (id) => {
         currentPage.value--
       }
     } catch (error) {
-      cargandoAccion.value = false
       console.error('Error al eliminar aula:', error)
       await Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo eliminar el aula',
+        text: error.response?.data?.message || 'No se pudo eliminar el aula',
         confirmButtonColor: '#3ABEF9',
         background: '#ffffff',
         color: '#213547',
         iconColor: '#E54848',
-        width: '450px',
+        width: '500px',
       })
     } finally {
       cargandoAccion.value = false
@@ -372,12 +475,18 @@ const eliminarAula = async (id) => {
   }
 }
 
+// ============================================================
+// CRUD - CERRAR FORMULARIO
+// ============================================================
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   modoEdicion.value = false
   aulaEditando.value = null
 }
 
+// ============================================================
+// CICLO DE VIDA
+// ============================================================
 onMounted(() => {
   obtenerAulas()
   obtenerEdificios()
@@ -544,7 +653,73 @@ onMounted(() => {
 }
 
 /* =======================
-   MODAL (ESTILO PERFIL)
+   LOADING
+======================= */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* =======================
+   EMPTY STATE
+======================= */
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
+}
+
+/* =======================
+   MODAL
 ======================= */
 .form-overlay {
   position: fixed;

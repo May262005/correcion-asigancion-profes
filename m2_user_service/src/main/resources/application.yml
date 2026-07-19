@@ -28,6 +28,3 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
-
-jwt:
-  secret: CRONOS2026_SECRET_KEY_256_BITS_LONG_ENOUGH_1234567890ABCDEF

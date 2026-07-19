@@ -22,68 +22,73 @@
 
           <div class="input-group">
             <i class="fas fa-id-card"></i>
-            <input v-model="apellido_paterno" type="text" placeholder="Ap. Paterno" required />
+            <input v-model="apellidoPaterno" type="text" placeholder="Ap. Paterno" required />
           </div>
 
           <div class="input-group full-width-mobile">
             <i class="fas fa-id-card"></i>
-            <input v-model="apellido_materno" type="text" placeholder="Ap. Materno" required />
+            <input v-model="apellidoMaterno" type="text" placeholder="Ap. Materno" required />
           </div>
         </div>
 
         <div class="input-group">
           <i class="fas fa-envelope"></i>
-          <input v-model="correo_electronico" type="email" placeholder="Correo institucional" @input="detectarRol"
-            required />
+          <input v-model="correoElectronico" type="email" placeholder="Correo institucional" @input="detectarRol" required />
         </div>
 
         <div class="input-group">
           <i class="fas fa-lock"></i>
-          <input v-model="contrasena" type="password" placeholder="Contraseña"
-            :class="{ 'input-error': mostrarInfo && !esContrasenaSegura }" required @input="mostrarInfo = true" />
+          <input v-model="contrasena" type="password" placeholder="Contraseña" required @input="mostrarInfo = true" />
         </div>
 
         <transition name="fade">
           <div v-if="mostrarInfo && !esContrasenaSegura" class="password-status-card">
             <p><i class="fas fa-shield-alt"></i> Seguridad requerida:</p>
             <ul class="status-list">
-              <li :class="{ 'valid': longitudValida }"><i class="fas"
-                  :class="longitudValida ? 'fa-check' : 'fa-times'"></i> 8+ carac.</li>
-              <li :class="{ 'valid': tieneMayuscula }"><i class="fas"
-                  :class="tieneMayuscula ? 'fa-check' : 'fa-times'"></i> Mayúscula</li>
-              <li :class="{ 'valid': tieneNumero }"><i class="fas" :class="tieneNumero ? 'fa-check' : 'fa-times'"></i>
-                Número</li>
-              <li :class="{ 'valid': tieneEspecial }"><i class="fas"
-                  :class="tieneEspecial ? 'fa-check' : 'fa-times'"></i> Símbolo</li>
+              <li :class="{ 'valid': longitudValida }"><i class="fas" :class="longitudValida ? 'fa-check' : 'fa-times'"></i> 8+ carac.</li>
+              <li :class="{ 'valid': tieneMayuscula }"><i class="fas" :class="tieneMayuscula ? 'fa-check' : 'fa-times'"></i> Mayúscula</li>
+              <li :class="{ 'valid': tieneNumero }"><i class="fas" :class="tieneNumero ? 'fa-check' : 'fa-times'"></i> Número</li>
+              <li :class="{ 'valid': tieneEspecial }"><i class="fas" :class="tieneEspecial ? 'fa-check' : 'fa-times'"></i> Símbolo</li>
             </ul>
           </div>
         </transition>
 
+        <!-- ✅ CAMPOS PARA PROFESOR -->
         <transition name="scale">
-          <div v-show="esProfesor" class="dynamic-fields">
+          <div v-if="esProfesor" class="dynamic-fields">
             <div class="input-group">
               <i class="fas fa-phone"></i>
-              <input v-model="telefono" type="tel" placeholder="Teléfono (10 dígitos)" pattern="[0-9]{10}"
-                maxlength="10" :required="esProfesor" />
+              <input v-model="telefono" type="tel" placeholder="Teléfono (10 dígitos)" pattern="[0-9]{10}" maxlength="10" required />
             </div>
             <div class="input-group">
               <i class="fas fa-graduation-cap"></i>
-              <input v-model="titulo" type="text" placeholder="Título (ej: Ing., Lic.)" maxlength="100"
-                :required="esProfesor" />
+              <input v-model="titulo" type="text" placeholder="Título (ej: Ing., Lic.)" maxlength="100" required />
+            </div>
+            <!-- ✅ CHECKBOX PARA PSICÓLOGO -->
+            <div class="input-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="esPsicologo" />
+                <span><i class="fas fa-brain"></i> Marcar como Psicólogo</span>
+              </label>
             </div>
           </div>
         </transition>
 
+        <!-- ✅ CAMPOS PARA ESTUDIANTE -->
         <transition name="scale">
-          <div v-show="!esProfesor && correo_electronico" class="dynamic-fields">
+          <div v-if="!esProfesor && correoElectronico" class="dynamic-fields">
             <div class="input-group select-group">
               <i class="fas fa-users"></i>
-              <select v-model="id_grupo" :required="!esProfesor">
+              <select v-model="idGrupo" required>
                 <option value="" disabled selected>Selecciona tu grupo</option>
                 <option v-for="g in grupos" :key="g.id" :value="g.id">
-                  {{ g.grado }}° {{ g.abreviatura }} ({{ g.division?.nombre }})
+                  {{ g.grado }}° {{ g.abreviatura }}
                 </option>
               </select>
+            </div>
+            <div class="input-group">
+              <i class="fas fa-id-card"></i>
+              <input v-model="matricula" type="text" placeholder="Matrícula" required />
             </div>
           </div>
         </transition>
@@ -106,45 +111,58 @@
 
 <script setup>
 import axios from '../../utils/axios-config'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
 
-// Variables de estado (Tus funcionalidades originales)
+// ============================================================
+// ESTADO
+// ============================================================
 const nombre = ref('')
-const apellido_paterno = ref('')
-const apellido_materno = ref('')
-const correo_electronico = ref('')
+const apellidoPaterno = ref('')
+const apellidoMaterno = ref('')
+const correoElectronico = ref('')
 const contrasena = ref('')
 const telefono = ref('')
 const titulo = ref('')
 const esProfesor = ref(false)
+const esPsicologo = ref(false)
 const mostrarInfo = ref(false)
 const procesando = ref(false)
 const grupos = ref([])
-const id_grupo = ref('')
+const idGrupo = ref('')
+const matricula = ref('')
 
+// ============================================================
+// OBTENER GRUPOS
+// ============================================================
 const obtenerGrupos = async () => {
   try {
-    const res = await axios.get("/grupos")
+    const res = await axios.get('/api/v1/grupos')
     grupos.value = res.data
   } catch (error) {
-    console.error("Error cargando grupos:", error)
+    console.error('Error cargando grupos:', error)
   }
 }
 
+// ============================================================
+// DETECTAR ROL POR CORREO
+// ============================================================
 const detectarRol = () => {
-  const emailPart = correo_electronico.value.split('@')[0]
+  const emailPart = correoElectronico.value.split('@')[0]
   const soloNumeros = /^\d+$/.test(emailPart)
-  esProfesor.value = !soloNumeros && correo_electronico.value.length > 0
-  if (!esProfesor.value && correo_electronico.value.length > 0) {
+  esProfesor.value = !soloNumeros && correoElectronico.value.length > 0
+  
+  if (!esProfesor.value && correoElectronico.value.length > 0) {
     obtenerGrupos()
   }
 }
 
-// Validaciones de Contraseña (Tus funcionalidades originales)
+// ============================================================
+// VALIDACIONES DE CONTRASEÑA
+// ============================================================
 const tieneMinuscula = computed(() => /[a-z]/.test(contrasena.value))
 const tieneMayuscula = computed(() => /[A-Z]/.test(contrasena.value))
 const tieneNumero = computed(() => /\d/.test(contrasena.value))
@@ -155,15 +173,22 @@ const esContrasenaSegura = computed(() =>
   tieneMinuscula.value && tieneMayuscula.value && tieneNumero.value && tieneEspecial.value && longitudValida.value
 )
 
+// ============================================================
+// REGISTRAR USUARIO
+// ============================================================
 const register = async () => {
   if (procesando.value) return
 
   if (!esContrasenaSegura.value) {
-    Swal.fire({
+    await Swal.fire({
       icon: 'info',
       title: 'Contraseña no segura',
       text: 'Asegúrate de cumplir los requisitos de seguridad.',
-      confirmButtonColor: '#3ABEF9'
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#3ABEF9',
+      width: '450px',
     })
     return
   }
@@ -171,61 +196,133 @@ const register = async () => {
   procesando.value = true
 
   try {
-    const payload = {
-      nombre: nombre.value.trim(),
-      apellido_paterno: apellido_paterno.value.trim(),
-      apellido_materno: apellido_materno.value.trim(),
-      correo_electronico: correo_electronico.value.trim(),
-      contrasena: contrasena.value
-    }
-
     if (esProfesor.value) {
-      payload.telefono = telefono.value.trim()
-      payload.titulo = titulo.value.trim()
+      // ============================================================
+      // ✅ REGISTRO DE PROFESOR (con contraseña del usuario)
+      // ============================================================
+      const payload = {
+        nombre: nombre.value.trim(),
+        apellidoPaterno: apellidoPaterno.value.trim(),
+        apellidoMaterno: apellidoMaterno.value.trim(),
+        correoElectronico: correoElectronico.value.trim(),
+        telefono: telefono.value.trim() || '',
+        titulo: titulo.value.trim() || '',
+        esPsicologo: esPsicologo.value,
+        contrasena: contrasena.value  // ✅ ENVÍA LA CONTRASEÑA
+      }
+
+      await axios.post('/api/profesores', payload)
+
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Registro exitoso!',
+        text: `Profesor${esPsicologo.value ? ' (Psicólogo)' : ''} registrado correctamente`,
+        showConfirmButton: false,
+        timer: 1500,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
+      })
+
     } else {
-      if (!id_grupo.value) {
-        Swal.fire({ icon: 'warning', title: 'Grupo requerido', text: 'Selecciona un grupo', confirmButtonColor: '#3ABEF9' })
+      // ============================================================
+      // ✅ REGISTRO DE ESTUDIANTE (con contraseña del usuario)
+      // ============================================================
+      if (!idGrupo.value) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Grupo requerido',
+          text: 'Selecciona un grupo para continuar',
+          confirmButtonColor: '#3ABEF9',
+          background: '#ffffff',
+          color: '#213547',
+          iconColor: '#F59E0B',
+          width: '450px',
+        })
         procesando.value = false
         return
       }
-      payload.id_grupo = parseInt(id_grupo.value)
+
+      if (!matricula.value.trim()) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Matrícula requerida',
+          text: 'Ingresa tu número de matrícula',
+          confirmButtonColor: '#3ABEF9',
+          background: '#ffffff',
+          color: '#213547',
+          iconColor: '#F59E0B',
+          width: '450px',
+        })
+        procesando.value = false
+        return
+      }
+
+      const payload = {
+        nombre: nombre.value.trim(),
+        apellidoPaterno: apellidoPaterno.value.trim(),
+        apellidoMaterno: apellidoMaterno.value.trim(),
+        correoElectronico: correoElectronico.value.trim(),
+        idGrupo: parseInt(idGrupo.value),
+        matricula: matricula.value.trim(),
+        contrasena: contrasena.value  // ✅ ENVÍA LA CONTRASEÑA
+      }
+
+      await axios.post('/api/estudiantes', payload)
+
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Registro exitoso!',
+        text: 'Estudiante registrado correctamente',
+        showConfirmButton: false,
+        timer: 1500,
+        background: '#ffffff',
+        color: '#213547',
+        iconColor: '#3ABEF9',
+        width: '450px',
+      })
     }
 
-    await axios.post('/auth/registro', payload)
-
-    await Swal.fire({
-      icon: 'success',
-      title: '¡Registro exitoso!',
-      text: 'Tu cuenta fue creada correctamente',
-      showConfirmButton: false,
-      timer: 1500,
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#3ABEF9'
-    })
-
+    // Mostrar aviso de privacidad
     await Swal.fire({
       title: 'Aviso de Privacidad',
       html: `<div style="text-align: justify; font-size: 14px;">Tus datos serán utilizados únicamente para fines académicos y administrativos, garantizando la confidencialidad.</div>`,
       icon: 'info',
       confirmButtonText: 'Aceptar',
       confirmButtonColor: '#3ABEF9',
-      allowOutsideClick: false
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#3ABEF9',
+      allowOutsideClick: false,
+      width: '450px',
     })
 
     router.push({ name: 'login' })
 
   } catch (error) {
-    Swal.fire({
+    console.error('Error al registrar:', error)
+    await Swal.fire({
       icon: 'error',
       title: 'Error al registrar',
       text: error.response?.data?.message || 'Error en el servidor',
-      confirmButtonColor: '#3ABEF9'
+      confirmButtonColor: '#3ABEF9',
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#E54848',
+      width: '500px',
     })
   } finally {
     procesando.value = false
   }
 }
+
+// ============================================================
+// CICLO DE VIDA
+// ============================================================
+onMounted(() => {
+  obtenerGrupos()
+})
 </script>
 
 <style scoped>
@@ -243,17 +340,9 @@ const register = async () => {
 }
 
 @keyframes gradientBG {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Shapes decorativas */
@@ -282,15 +371,8 @@ const register = async () => {
 }
 
 @keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(20px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(20px); }
 }
 
 /* Tarjeta Principal */
@@ -329,7 +411,7 @@ const register = async () => {
   font-size: 0.9rem;
 }
 
-/* Grid de Inputs (Responsivo) */
+/* Grid de Inputs */
 .input-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -349,6 +431,7 @@ const register = async () => {
   transform: translateY(-50%);
   color: #94a3b8;
   font-size: 0.9rem;
+  z-index: 2;
 }
 
 .input-group input,
@@ -362,14 +445,74 @@ const register = async () => {
   transition: 0.3s;
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
   border-color: #3abef9;
   outline: none;
   background: white;
   box-shadow: 0 0 0 4px rgba(58, 190, 249, 0.1);
 }
 
-/* Password Check Card */
+/* ============================================================
+   ✅ CHECKBOX PARA PSICÓLOGO
+   ============================================================ */
+.checkbox-group {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.checkbox-group i {
+  display: none;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px solid #f1f5f9;
+  transition: 0.3s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.checkbox-label:hover {
+  border-color: #3abef9;
+  background: #f0f9ff;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3abef9;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.checkbox-label span {
+  font-weight: 500;
+  color: #334155;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-label span i {
+  display: inline-block !important;
+  position: static !important;
+  transform: none !important;
+  color: #3abef9;
+  font-size: 1rem;
+}
+
+/* ============================================================
+   PASSWORD STATUS
+   ============================================================ */
 .password-status-card {
   background: #fffafa;
   border: 1px solid #fee2e2;
@@ -459,7 +602,19 @@ const register = async () => {
   transform: scale(0.95);
 }
 
-/* --- RESPONSIVIDAD MÓVIL --- */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 @media (max-width: 550px) {
   .input-grid {
     grid-template-columns: 1fr;
@@ -486,6 +641,10 @@ const register = async () => {
   .status-list {
     grid-template-columns: 1fr;
   }
+
+  .checkbox-label {
+    padding: 10px 14px;
+  }
 }
 
 @keyframes slideIn {
@@ -493,7 +652,6 @@ const register = async () => {
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -508,7 +666,6 @@ const register = async () => {
   from {
     transform: scale(0.8);
   }
-
   to {
     transform: scale(1);
   }
