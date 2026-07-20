@@ -158,33 +158,23 @@ import '../../assets/styles.css'
 
 const router = useRouter()
 
-// ============================================================
-// NAVEGACIÓN
-// ============================================================
-const goBack = () => router.back()
-
-// ============================================================
-// CONFIGURACIÓN DE API - Gateway
-// ============================================================
 const API_ESTUDIANTES = '/api/estudiantes'
 const API_GRUPOS = '/api/v1/grupos'
 
-// ============================================================
-// ESTADO
-// ============================================================
+const goBack = () => {
+  router.back()
+}
+
 const alumnos = ref([])
 const grupos = ref([])
-const itemsPerPage = 5
+const cargando = ref(false)
+const cargandoAccion = ref(false)
+const itemsPerPage = 3
 const currentPage = ref(1)
 const mostrarFormulario = ref(false)
 const modoEdicion = ref(false)
 const alumnoEditando = ref(null)
-const cargando = ref(false)
-const cargandoAccion = ref(false)
 
-// ============================================================
-// FORMULARIO
-// ============================================================
 const formAlumno = ref({
   nombre: '',
   apellidoPaterno: '',
@@ -194,9 +184,6 @@ const formAlumno = ref({
   matricula: '',
 })
 
-// ============================================================
-// COMPUTADAS
-// ============================================================
 const totalPages = computed(() => Math.ceil(alumnos.value.length / itemsPerPage))
 const indexOfLastAlumno = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstAlumno = computed(() => indexOfLastAlumno.value - itemsPerPage)
@@ -206,15 +193,11 @@ const handlePageChange = (pageNumber) => {
   currentPage.value = pageNumber
 }
 
-// ============================================================
-// CRUD - OBTENER ALUMNOS
-// ============================================================
 const obtenerAlumnos = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_ESTUDIANTES)
     alumnos.value = res.data
-    console.log('Alumnos cargados:', alumnos.value)
   } catch (error) {
     console.error('Error al obtener alumnos:', error)
     await Swal.fire({
@@ -232,14 +215,10 @@ const obtenerAlumnos = async () => {
   }
 }
 
-// ============================================================
-// CRUD - OBTENER GRUPOS
-// ============================================================
 const obtenerGrupos = async () => {
   try {
     const res = await axios.get(API_GRUPOS)
     grupos.value = res.data
-    console.log('Grupos cargados:', grupos.value)
   } catch (error) {
     console.error('Error al obtener grupos:', error)
     await Swal.fire({
@@ -255,17 +234,11 @@ const obtenerGrupos = async () => {
   }
 }
 
-// ============================================================
-// CRUD - OBTENER NOMBRE DEL GRUPO
-// ============================================================
 const obtenerNombreGrupo = (id) => {
   const grupo = grupos.value.find((g) => g.id === id)
   return grupo ? grupo.nombre : 'Sin grupo'
 }
 
-// ============================================================
-// CRUD - ABRIR FORMULARIO
-// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   alumnoEditando.value = null
@@ -280,17 +253,11 @@ const abrirFormularioNuevo = () => {
   mostrarFormulario.value = true
 }
 
-// ============================================================
-// CRUD - EDITAR ALUMNO
-// ============================================================
 const editarAlumno = (alumno) => {
   modoEdicion.value = true
   alumnoEditando.value = alumno.id
-  
-  // Dividir nombre completo en partes
   const nombreCompleto = alumno.nombreCompleto || ''
   const partes = nombreCompleto.split(' ')
-  
   formAlumno.value = {
     nombre: partes[0] || '',
     apellidoPaterno: partes.slice(1, partes.length - 1).join(' ') || '',
@@ -302,81 +269,7 @@ const editarAlumno = (alumno) => {
   mostrarFormulario.value = true
 }
 
-// ============================================================
-// CRUD - GUARDAR ALUMNO
-// ============================================================
 const guardarAlumno = async () => {
-  // Validaciones
-  if (!formAlumno.value.nombre.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El nombre del alumno es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formAlumno.value.apellidoPaterno.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El apellido paterno es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formAlumno.value.correoElectronico.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El correo electrónico es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formAlumno.value.matricula.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'La matrícula es obligatoria',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formAlumno.value.idGrupo) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'Debes seleccionar un grupo',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
   cargandoAccion.value = true
   try {
     const payload = {
@@ -390,6 +283,7 @@ const guardarAlumno = async () => {
 
     if (modoEdicion.value) {
       await axios.patch(`${API_ESTUDIANTES}/${alumnoEditando.value}`, payload)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: '¡Actualizado!',
@@ -403,6 +297,7 @@ const guardarAlumno = async () => {
       })
     } else {
       await axios.post(API_ESTUDIANTES, payload)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: '¡Agregado!',
@@ -418,6 +313,7 @@ const guardarAlumno = async () => {
     cerrarFormulario()
     await obtenerAlumnos()
   } catch (error) {
+    cargandoAccion.value = false
     console.error('Error guardando alumno:', error)
     await Swal.fire({
       icon: 'error',
@@ -434,9 +330,6 @@ const guardarAlumno = async () => {
   }
 }
 
-// ============================================================
-// CRUD - ELIMINAR ALUMNO
-// ============================================================
 const eliminarAlumno = async (id) => {
   const confirm = await Swal.fire({
     title: '¿Eliminar alumno?',
@@ -457,6 +350,7 @@ const eliminarAlumno = async (id) => {
     cargandoAccion.value = true
     try {
       await axios.delete(`${API_ESTUDIANTES}/${id}`)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: 'Eliminado',
@@ -469,11 +363,11 @@ const eliminarAlumno = async (id) => {
         width: '450px',
       })
       await obtenerAlumnos()
-      
       if (currentAlumnos.value.length === 0 && currentPage.value > 1) {
         currentPage.value--
       }
     } catch (error) {
+      cargandoAccion.value = false
       console.error('Error al eliminar alumno:', error)
       await Swal.fire({
         icon: 'error',
@@ -491,18 +385,12 @@ const eliminarAlumno = async (id) => {
   }
 }
 
-// ============================================================
-// CRUD - CERRAR FORMULARIO
-// ============================================================
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   modoEdicion.value = false
   alumnoEditando.value = null
 }
 
-// ============================================================
-// CICLO DE VIDA
-// ============================================================
 onMounted(() => {
   obtenerAlumnos()
   obtenerGrupos()
@@ -510,17 +398,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* =======================
-   ESTILO LISTA DE ALUMNOS - BOTÓN AL LADO DEL TÍTULO
-======================= */
-
 .alumnos-main {
   max-width: 1200px;
   margin: 40px auto;
   padding: 0 20px;
 }
 
-/* Header con botón a la izquierda y título centrado */
 .alumnos-header {
   display: flex;
   align-items: center;
@@ -541,7 +424,6 @@ onMounted(() => {
   border: 1px solid #e2e8f0;
   transition: all 0.3s ease;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   flex-shrink: 0;
 }
 
@@ -583,7 +465,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* Tarjeta blanca */
 .alumnos-card {
   background: white;
   border-radius: 20px;
@@ -592,7 +473,6 @@ onMounted(() => {
   border: 1px solid #f0f0f0;
 }
 
-/* Tabla */
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -620,7 +500,6 @@ onMounted(() => {
   background-color: #f8fafc;
 }
 
-/* Botones de acción */
 .btn-accion {
   width: auto;
   padding: 6px 12px;
@@ -628,7 +507,6 @@ onMounted(() => {
   font-size: 0.75rem;
 }
 
-/* Paginación */
 .pagination {
   display: flex;
   justify-content: center;
@@ -658,7 +536,6 @@ onMounted(() => {
   color: white;
 }
 
-/* Botón agregar */
 .btn-div {
   display: flex;
   justify-content: center;
@@ -669,9 +546,6 @@ onMounted(() => {
   margin-right: 8px;
 }
 
-/* =======================
-   LOADING
-======================= */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -709,9 +583,6 @@ onMounted(() => {
   z-index: 2000;
 }
 
-/* =======================
-   EMPTY STATE
-======================= */
 .empty-state {
   background: white;
   border-radius: 20px;
@@ -735,9 +606,6 @@ onMounted(() => {
   color: #94a3b8;
 }
 
-/* =======================
-   MODAL (ESTILO PERFIL)
-======================= */
 .form-overlay {
   position: fixed;
   top: 0;
@@ -851,102 +719,30 @@ onMounted(() => {
   background: #f1f5f9;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .alumnos-main {
-    padding: 0 15px;
-  }
-  
-  .alumnos-card {
-    padding: 20px;
-  }
-  
-  .form-grid-layout {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .styled-table th,
-  .styled-table td {
-    padding: 10px 12px;
-  }
-  
-  .btn-accion {
-    margin: 2px;
-  }
+  .alumnos-main { padding: 0 15px; }
+  .alumnos-card { padding: 20px; }
+  .form-grid-layout { grid-template-columns: 1fr; gap: 12px; }
+  .styled-table th, .styled-table td { padding: 10px 12px; }
+  .btn-accion { margin: 2px; }
 }
 
 @media (max-width: 600px) {
-  .alumnos-header {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  .header-spacer {
-    display: none;
-  }
-  
-  .btn-back-icon {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-  
-  .header-text {
-    flex: none;
-    width: 100%;
-    margin-top: 10px;
-  }
-  
-  .header-text h1 {
-    font-size: 1.5rem;
-  }
+  .alumnos-header { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .header-spacer { display: none; }
+  .btn-back-icon { position: absolute; left: 0; top: 0; }
+  .header-text { flex: none; width: 100%; margin-top: 10px; }
+  .header-text h1 { font-size: 1.5rem; }
 }
 
 @media (max-width: 480px) {
-  .styled-table thead {
-    display: none;
-  }
-  
-  .styled-table tbody tr {
-    display: block;
-    margin-bottom: 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 10px;
-  }
-  
-  .styled-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 10px;
-    border-bottom: 1px solid #e2e8f0;
-    text-align: right;
-  }
-  
-  .styled-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #334155;
-    text-align: left;
-  }
-  
-  .styled-table td:last-child {
-    border-bottom: none;
-  }
-  
-  .btn-accion {
-    width: auto;
-  }
-  
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .modal-footer button {
-    width: 100%;
-  }
+  .styled-table thead { display: none; }
+  .styled-table tbody tr { display: block; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; }
+  .styled-table td { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  .styled-table td::before { content: attr(data-label); font-weight: 600; color: #334155; text-align: left; }
+  .styled-table td:last-child { border-bottom: none; }
+  .btn-accion { width: auto; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer button { width: 100%; }
 }
 </style>

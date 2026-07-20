@@ -23,7 +23,6 @@
     </div>
 
     <main class="turnos-main">
-      <!-- HEADER CON BOTÓN REGRESAR -->
       <div class="turnos-header">
         <button @click="goBack" class="btn-back-icon" title="Volver al Dashboard">
           <i class="fas fa-arrow-left"></i>
@@ -96,7 +95,6 @@
       </div>
     </main>
 
-    <!-- MODAL (ESTILO PERFIL) -->
     <div v-if="mostrarFormulario" class="form-overlay" @click.self="cerrarFormulario">
       <div class="form-modal">
         <div class="modal-header">
@@ -114,7 +112,7 @@
 
               <div class="input-group">
                 <label>Día de inicio</label>
-                <select v-model.number="formTurno.dia_inicio" required>
+                <select v-model.number="formTurno.diaInicio" required>
                   <option disabled value="">Seleccione un día</option>
                   <option v-for="(nombre, numero) in diasSemana" :key="numero" :value="numero">
                     {{ nombre }}
@@ -124,7 +122,7 @@
 
               <div class="input-group">
                 <label>Día de fin</label>
-                <select v-model.number="formTurno.dia_fin" required>
+                <select v-model.number="formTurno.diaFin" required>
                   <option disabled value="">Seleccione un día</option>
                   <option v-for="(nombre, numero) in diasSemana" :key="numero" :value="numero">
                     {{ nombre }}
@@ -134,12 +132,12 @@
 
               <div class="input-group">
                 <label>Hora de Inicio</label>
-                <input v-model="formTurno.hora_inicio" type="time" required />
+                <input v-model="formTurno.horaInicio" type="time" required />
               </div>
 
               <div class="input-group">
                 <label>Hora de Fin</label>
-                <input v-model="formTurno.hora_fin" type="time" required />
+                <input v-model="formTurno.horaFin" type="time" required />
               </div>
             </div>
 
@@ -157,12 +155,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from '../../utils/axios-config'
-import '../../assets/styles.css'
+import axios from '@/utils/axios-config'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const API_TURNOS = `/api/turnos`
+const API_TURNOS = '/api/turnos'
 
 const goBack = () => {
   router.back()
@@ -189,10 +186,10 @@ const turnoEditando = ref(null)
 
 const formTurno = ref({
   nombre: '',
-  dia_inicio: '',
-  dia_fin: '',
-  hora_inicio: '',
-  hora_fin: ''
+  diaInicio: '',
+  diaFin: '',
+  horaInicio: '',
+  horaFin: ''
 })
 
 const itemsPerPage = 3
@@ -237,10 +234,10 @@ const abrirFormularioNuevo = () => {
   turnoEditando.value = null
   formTurno.value = {
     nombre: '',
-    dia_inicio: '',
-    dia_fin: '',
-    hora_inicio: '',
-    hora_fin: ''
+    diaInicio: '',
+    diaFin: '',
+    horaInicio: '',
+    horaFin: ''
   }
   mostrarFormulario.value = true
 }
@@ -250,63 +247,60 @@ const editarTurno = (turno) => {
   turnoEditando.value = turno.id
   formTurno.value = {
     nombre: turno.nombre,
-    dia_inicio: turno.diaInicio,
-    dia_fin: turno.diaFin,
-    hora_inicio: turno.horaInicio,
-    hora_fin: turno.horaFin
+    diaInicio: turno.diaInicio,
+    diaFin: turno.diaFin,
+    horaInicio: turno.horaInicio,
+    horaFin: turno.horaFin
   }
   mostrarFormulario.value = true
 }
 
 const guardarTurno = async () => {
   cargandoAccion.value = true
+  
+  console.log('📤 Enviando al backend:', JSON.stringify(formTurno.value, null, 2))
+  
   try {
+    let response
     if (modoEdicion.value) {
-      await axios.patch(`${API_TURNOS}/${turnoEditando.value}`, formTurno.value)
-      cargandoAccion.value = false
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Actualizado!',
-        text: 'Turno actualizado correctamente',
-        showConfirmButton: false,
-        timer: 2000,
-        background: '#ffffff',
-        color: '#213547',
-        iconColor: '#3ABEF9',
-        width: '450px',
-      })
+      console.log('✏️ Modo edición - ID:', turnoEditando.value)
+      response = await axios.patch(`${API_TURNOS}/${turnoEditando.value}`, formTurno.value)
     } else {
-      await axios.post(API_TURNOS, formTurno.value)
-      cargandoAccion.value = false
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Agregado!',
-        text: 'Turno agregado correctamente',
-        showConfirmButton: false,
-        timer: 2000,
-        background: '#ffffff',
-        color: '#213547',
-        iconColor: '#3ABEF9',
-        width: '450px',
-      })
+      response = await axios.post(API_TURNOS, formTurno.value)
     }
+    
+    console.log('✅ Respuesta:', response.data)
+    
+    cargandoAccion.value = false
+    await Swal.fire({
+      icon: 'success',
+      title: modoEdicion.value ? '¡Actualizado!' : '¡Agregado!',
+      text: modoEdicion.value ? 'Turno actualizado correctamente' : 'Turno agregado correctamente',
+      showConfirmButton: false,
+      timer: 2000,
+      background: '#ffffff',
+      color: '#213547',
+      iconColor: '#3ABEF9',
+      width: '450px',
+    })
+    
     cerrarFormulario()
     await obtenerTurnos()
   } catch (error) {
     cargandoAccion.value = false
-    console.error('Error al guardar turno:', error)
+    console.error('❌ Error al guardar turno:', error)
+    console.error('❌ Detalles:', error.response?.data)
+    
     await Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: 'No se pudo guardar el turno',
+      text: error.response?.data?.message || 'No se pudo guardar el turno',
       confirmButtonColor: '#3ABEF9',
       background: '#ffffff',
       color: '#213547',
       iconColor: '#E54848',
       width: '450px',
     })
-  } finally {
-    cargandoAccion.value = false
   }
 }
 
@@ -359,8 +353,6 @@ const eliminarTurno = async (id) => {
         iconColor: '#E54848',
         width: '450px',
       })
-    } finally {
-      cargandoAccion.value = false
     }
   }
 }
@@ -377,17 +369,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* =======================
-   LISTA DE TURNOS - CON BOTÓN REGRESAR
-======================= */
-
 .turnos-main {
   max-width: 1000px;
   margin: 40px auto;
   padding: 0 20px;
 }
 
-/* Header con botón a la izquierda y título centrado */
 .turnos-header {
   display: flex;
   align-items: center;
@@ -449,7 +436,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* Tarjeta blanca */
 .turnos-card {
   background: white;
   border-radius: 20px;
@@ -458,7 +444,6 @@ onMounted(() => {
   border: 1px solid #f0f0f0;
 }
 
-/* Tabla */
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -486,7 +471,6 @@ onMounted(() => {
   background-color: #f8fafc;
 }
 
-/* Botones de acción */
 .btn-accion {
   width: auto;
   padding: 6px 12px;
@@ -494,7 +478,6 @@ onMounted(() => {
   font-size: 0.75rem;
 }
 
-/* Paginación */
 .pagination {
   display: flex;
   justify-content: center;
@@ -524,7 +507,6 @@ onMounted(() => {
   color: white;
 }
 
-/* Botón agregar */
 .btn-div {
   display: flex;
   justify-content: center;
@@ -535,9 +517,6 @@ onMounted(() => {
   margin-right: 8px;
 }
 
-/* =======================
-   MODAL (ESTILO PERFIL)
-======================= */
 .form-overlay {
   position: fixed;
   top: 0;
@@ -656,7 +635,6 @@ onMounted(() => {
   background: #f1f5f9;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .turnos-main {
     padding: 0 15px;

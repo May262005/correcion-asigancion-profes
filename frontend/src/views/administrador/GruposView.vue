@@ -57,14 +57,14 @@
             </thead>
             <tbody>
               <tr v-for="grupo in currentGrupos" :key="grupo.id">
-                <td :data-label="'Nombre'">{{ grupo.nombre }}</td>
-                <td :data-label="'Abreviatura'">{{ grupo.abreviatura }}</td>
-                <td :data-label="'Grado'">{{ grupo.grado }}</td>
-                <td :data-label="'División'">{{ grupo.division?.nombre || '-' }}</td>
-                <td :data-label="'Turno'">{{ grupo.turno?.nombre || '-' }}</td>
-                <td :data-label="'Tutor'">{{ grupo.tutor?.usuario?.nombre }} {{ grupo.tutor?.usuario?.apellido_paterno || '' }}</td>
+                <td :data-label="'Nombre'">{{ grupo.nombre || '-' }}</td>
+                <td :data-label="'Abreviatura'">{{ grupo.abreviatura || '-' }}</td>
+                <td :data-label="'Grado'">{{ grupo.grado || '-' }}</td>
+                <td :data-label="'División'">{{ obtenerNombreDivision(grupo) }}</td>
+                <td :data-label="'Turno'">{{ obtenerNombreTurno(grupo) }}</td>
+                <td :data-label="'Tutor'">{{ obtenerNombreTutor(grupo) }}</td>
                 <td :data-label="'Color'">
-                  <div class="color-box" :style="{ backgroundColor: grupo.colorIdentificador }"></div>
+                  <div class="color-box" :style="{ backgroundColor: grupo.colorIdentificador || '#88B7F3' }"></div>
                 </td>
                 <td :data-label="'Acciones'">
                   <button class="btn-secondary btn-accion" @click="editarGrupo(grupo)">Editar</button>
@@ -120,17 +120,17 @@
 
               <div class="input-group">
                 <label>Abreviatura</label>
-                <input v-model="formGrupo.abreviatura" type="text" placeholder="Abreviatura" maxlength="10" />
+                <input v-model="formGrupo.abreviatura" type="text" placeholder="Abreviatura" maxlength="20" />
               </div>
 
               <div class="input-group">
                 <label>Grado</label>
-                <input v-model="formGrupo.grado" type="number" placeholder="Grado" required />
+                <input v-model="formGrupo.grado" type="text" placeholder="Grado (ej: 1, 2, 3)" required />
               </div>
 
               <div class="input-group">
                 <label>División</label>
-                <select v-model.number="formGrupo.id_division" required>
+                <select v-model.number="formGrupo.idDivision" required>
                   <option value="" disabled>Seleccione una división</option>
                   <option v-for="division in divisiones" :key="division.id" :value="division.id">
                     {{ division.nombre }}
@@ -140,7 +140,7 @@
 
               <div class="input-group">
                 <label>Turno</label>
-                <select v-model.number="formGrupo.id_turno" required>
+                <select v-model.number="formGrupo.idTurno" required>
                   <option value="" disabled>Seleccione un turno</option>
                   <option v-for="turno in turnos" :key="turno.id" :value="turno.id">
                     {{ turno.nombre }}
@@ -150,17 +150,17 @@
 
               <div class="input-group">
                 <label>Tutor</label>
-                <select v-model.number="formGrupo.tutor_id" required>
+                <select v-model.number="formGrupo.tutorId" required>
                   <option value="" disabled>Seleccione un tutor</option>
                   <option v-for="profesor in profesores" :key="profesor.id" :value="profesor.id">
-                    {{ profesor.usuario.nombre }} {{ profesor.usuario.apellido_paterno }}
+                    {{ profesor.nombreCompleto || profesor.usuario?.nombre + ' ' + profesor.usuario?.apellido_paterno || 'Sin nombre' }}
                   </option>
                 </select>
               </div>
 
               <div class="input-group full-width">
                 <label>Color identificador</label>
-                <input v-model="formGrupo.color_identificador" type="color" class="color-pointer" />
+                <input v-model="formGrupo.colorIdentificador" type="color" class="color-pointer" />
               </div>
             </div>
 
@@ -183,10 +183,10 @@ import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const API_GRUPOS = `http://localhost:3000/grupos`
-const API_DIVISIONES = `http://localhost:3000/divisiones`
-const API_TURNOS = `/api/turnos`
-const API_PROFESORES = `http://localhost:3000/profesores`
+const API_GRUPOS = `http://localhost:8080/api/v1/grupos`
+const API_DIVISIONES = `http://localhost:8080/api/divisiones`
+const API_TURNOS = `http://localhost:8080/api/turnos`
+const API_PROFESORES = `http://localhost:8080/api/profesores`
 
 const goBack = () => {
   router.back()
@@ -209,12 +209,36 @@ const cargandoAccion = ref(false)
 const formGrupo = ref({
   nombre: '',
   abreviatura: '',
-  grado: '',          
-  id_division: '',
-  id_turno: '',
-  tutor_id: '',
-  color_identificador: '#88B7F3'
+  grado: '',
+  idDivision: '',
+  idTurno: '',
+  tutorId: '',
+  colorIdentificador: '#88B7F3'
 })
+
+// Función para obtener el nombre de la división a partir del ID
+const obtenerNombreDivision = (grupo) => {
+  if (!grupo) return '-'
+  const division = divisiones.value.find(d => d.id === grupo.idDivision)
+  return division ? division.nombre : '-'
+}
+
+// Función para obtener el nombre del turno a partir del ID
+const obtenerNombreTurno = (grupo) => {
+  if (!grupo) return '-'
+  const turno = turnos.value.find(t => t.id === grupo.idTurno)
+  return turno ? turno.nombre : '-'
+}
+
+// Función para obtener el nombre del tutor a partir del ID
+const obtenerNombreTutor = (grupo) => {
+  if (!grupo || !grupo.tutorId) return '-'
+  const profesor = profesores.value.find(p => p.id === grupo.tutorId)
+  if (!profesor) return '-'
+  return profesor.nombreCompleto || 
+         (profesor.usuario ? `${profesor.usuario.nombre || ''} ${profesor.usuario.apellido_paterno || ''}`.trim() : 'Sin nombre') || 
+         '-'
+}
 
 const totalPages = computed(() => Math.ceil(grupos.value.length / itemsPerPage))
 const indexOfLastGrupo = computed(() => currentPage.value * itemsPerPage)
@@ -229,7 +253,8 @@ const obtenerGrupos = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_GRUPOS)
-    grupos.value = res.data
+    grupos.value = res.data || []
+    console.log('Grupos cargados:', grupos.value)
   } catch (error) {
     console.error('Error al obtener grupos:', error)
     await Swal.fire({
@@ -250,7 +275,8 @@ const obtenerGrupos = async () => {
 const obtenerDivisiones = async () => {
   try {
     const res = await axios.get(API_DIVISIONES)
-    divisiones.value = res.data
+    divisiones.value = res.data || []
+    console.log('Divisiones cargadas:', divisiones.value)
   } catch (error) {
     console.error('Error al obtener divisiones:', error)
     await Swal.fire({
@@ -269,7 +295,8 @@ const obtenerDivisiones = async () => {
 const obtenerTurnos = async () => {
   try {
     const res = await axios.get(API_TURNOS)
-    turnos.value = res.data
+    turnos.value = res.data || []
+    console.log('Turnos cargados:', turnos.value)
   } catch (error) {
     console.error('Error al obtener turnos:', error)
     await Swal.fire({
@@ -288,7 +315,8 @@ const obtenerTurnos = async () => {
 const obtenerProfesores = async () => {
   try {
     const res = await axios.get(API_PROFESORES)
-    profesores.value = res.data
+    profesores.value = res.data || []
+    console.log('Profesores cargados:', profesores.value)
   } catch (error) {
     console.error('Error al obtener profesores:', error)
     await Swal.fire({
@@ -311,10 +339,10 @@ const abrirFormularioNuevo = () => {
     nombre: '',
     abreviatura: '',
     grado: '',
-    id_division: '',
-    id_turno: '',
-    tutor_id: '',
-    color_identificador: '#88B7F3'
+    idDivision: '',
+    idTurno: '',
+    tutorId: '',
+    colorIdentificador: '#88B7F3'
   }
   mostrarFormulario.value = true
 }
@@ -326,11 +354,11 @@ const editarGrupo = (grupo) => {
   formGrupo.value = {
     nombre: grupo.nombre || '',
     abreviatura: grupo.abreviatura || '',
-    grado: String(grupo.grado || ''), 
-    id_division: grupo.id_division || grupo.division?.id || '',
-    id_turno: grupo.id_turno || grupo.turno?.id || '',
-    tutor_id: grupo.tutor_id || grupo.tutor?.id || '',
-    color_identificador: grupo.colorIdentificador || '#88B7F3'
+    grado: grupo.grado || '',
+    idDivision: grupo.idDivision || '',
+    idTurno: grupo.idTurno || '',
+    tutorId: grupo.tutorId || '',
+    colorIdentificador: grupo.colorIdentificador || '#88B7F3'
   }
 
   mostrarFormulario.value = true
@@ -339,10 +367,22 @@ const editarGrupo = (grupo) => {
 const guardarGrupo = async () => {
   cargandoAccion.value = true
   try {
-    formGrupo.value.grado = String(formGrupo.value.grado)
+    // Convertir valores a número donde sea necesario
+    const payload = {
+      nombre: formGrupo.value.nombre.trim(),
+      abreviatura: formGrupo.value.abreviatura?.trim() || '',
+      grado: formGrupo.value.grado?.trim() || '',
+      idTurno: Number(formGrupo.value.idTurno),
+      idDivision: Number(formGrupo.value.idDivision),
+      tutorId: Number(formGrupo.value.tutorId),
+      colorIdentificador: formGrupo.value.colorIdentificador || '#88B7F3'
+    }
+
+    console.log('Payload a enviar:', payload)
+
     if (modoEdicion.value) {
-      await axios.patch(`${API_GRUPOS}/${grupoEditando.value}`, formGrupo.value)
-      cargandoAccion.value = false
+      // Usar PUT en lugar de PATCH
+      await axios.put(`${API_GRUPOS}/${grupoEditando.value}`, payload)
       await Swal.fire({ 
         icon: 'success', 
         title: '¡Actualizado!', 
@@ -355,8 +395,7 @@ const guardarGrupo = async () => {
         width: '450px',
       })
     } else {
-      await axios.post(API_GRUPOS, formGrupo.value)
-      cargandoAccion.value = false
+      await axios.post(API_GRUPOS, payload)
       await Swal.fire({ 
         icon: 'success', 
         title: '¡Agregado!', 
@@ -374,12 +413,18 @@ const guardarGrupo = async () => {
     await obtenerGrupos()
 
   } catch (error) {
-    cargandoAccion.value = false
     console.error('Error al guardar grupo:', error)
+    let errorMsg = 'Error al guardar el grupo'
+    if (error.response?.data) {
+      // Si el backend devuelve un mensaje de error
+      errorMsg = typeof error.response.data === 'string' 
+        ? error.response.data 
+        : error.response.data.message || errorMsg
+    }
     await Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: error.response?.data?.message || 'Error al guardar el grupo',
+      text: errorMsg,
       confirmButtonColor: '#3ABEF9',
       background: '#ffffff',
       color: '#213547',
@@ -411,7 +456,6 @@ const eliminarGrupo = async (id) => {
     cargandoAccion.value = true
     try {
       await axios.delete(`${API_GRUPOS}/${id}`)
-      cargandoAccion.value = false
       await Swal.fire({ 
         icon: 'success', 
         title: 'Eliminado', 
@@ -430,12 +474,11 @@ const eliminarGrupo = async (id) => {
       }
 
     } catch (error) {
-      cargandoAccion.value = false
       console.error('Error al eliminar grupo:', error)
       await Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo eliminar el grupo. Puede estar asociado a otras entidades.',
+        text: error.response?.data || 'No se pudo eliminar el grupo. Puede estar asociado a otras entidades.',
         confirmButtonColor: '#3ABEF9',
         background: '#ffffff',
         color: '#213547',
@@ -454,11 +497,13 @@ const cerrarFormulario = () => {
   grupoEditando.value = null
 }
 
-onMounted(() => {
-  obtenerGrupos()
-  obtenerDivisiones()
-  obtenerTurnos()
-  obtenerProfesores()
+onMounted(async () => {
+  await Promise.all([
+    obtenerGrupos(),
+    obtenerDivisiones(),
+    obtenerTurnos(),
+    obtenerProfesores()
+  ])
 })
 </script>
 
@@ -744,6 +789,64 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background: #f1f5f9;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
 }
 
 @media (max-width: 768px) {
