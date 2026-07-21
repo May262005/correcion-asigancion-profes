@@ -38,7 +38,7 @@
               <select v-model="form.id_profesor" @change="onProfesorChange" required>
                 <option value="" disabled>Selecciona un docente...</option>
                 <option v-for="profe in profesores" :key="profe.id" :value="profe.id">
-                  {{ profe.nombre_mostrar }}
+                  {{ mostrarNombreProfesor(profe) }}
                 </option>
               </select>
             </div>
@@ -126,7 +126,7 @@
                 <tr v-for="cita in historial" :key="cita.id">
                   <td data-label="Profesor">
                     <div class="date-cell">
-                      <span>Profesor #{{ cita.idProfesor }}</span>
+                      <span>{{ obtenerNombreProfesor(cita.idProfesor) }}</span>
                     </div>
                   </td>
                   <td data-label="Fecha / Hora">
@@ -212,6 +212,17 @@ const getEstadoTexto = (estado) => {
   return estados[estado] || estado
 }
 
+const mostrarNombreProfesor = (profe) => {
+  if (!profe) return 'Docente'
+  return profe.nombre_mostrar || profe.nombreCompleto || 'Docente'
+}
+
+const obtenerNombreProfesor = (idProfesor) => {
+  const profesor = profesores.value.find(p => Number(p.id) === Number(idProfesor))
+  const nombre = mostrarNombreProfesor(profesor)
+  return nombre !== 'Docente' ? nombre : `Profesor #${idProfesor}`
+}
+
 const resetForm = () => {
   form.value = {
     id_profesor: '',
@@ -231,12 +242,7 @@ const onProfesorChange = () => {
 const cargarProfesores = async () => {
   try {
     const res = await axios.get('/api/profesores')
-    profesores.value = res.data.map(p => ({
-      id: p.id,
-      nombre_mostrar: p.usuario ? 
-        `${p.titulo ? p.titulo + ' ' : ''}${p.usuario.nombre} ${p.usuario.apellido_paterno || ''} ${p.usuario.apellido_materno || ''}`.trim() 
-        : 'Docente'
-    }))
+    profesores.value = Array.isArray(res.data) ? res.data : []
     console.log('✅ Profesores cargados:', profesores.value.length)
   } catch (error) {
     console.error("❌ Error al cargar profesores:", error)
@@ -325,7 +331,7 @@ const confirmarAgendamiento = async () => {
     title: '¿Confirmar asesoría?',
     html: `
       <div style="text-align: left">
-        <p><strong>Profesor:</strong> ${profesorSeleccionado?.nombre_mostrar || 'No especificado'}</p>
+        <p><strong>Profesor:</strong> ${mostrarNombreProfesor(profesorSeleccionado) || 'No especificado'}</p>
         <p><strong>Fecha:</strong> ${formatFecha(form.value.fecha_asesoria)}</p>
         <p><strong>Hora:</strong> ${form.value.hora_asesoria}</p>
         <p><strong>Tema:</strong> ${form.value.tema_duda}</p>

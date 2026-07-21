@@ -55,8 +55,8 @@
                   <tr v-for="cita in asesorias" :key="cita.id">
                     <td data-label="Alumno">
                       <div class="user-info-cell">
-                        <div class="user-avatar-mini">#</div>
-                        <span>Alumno #{{ cita.idEstudiante }}</span>
+                        <div class="user-avatar-mini">{{ obtenerInicialEstudiante(cita.idEstudiante) }}</div>
+                        <span>{{ obtenerNombreEstudiante(cita.idEstudiante) }}</span>
                       </div>
                     </td>
                     <td data-label="Fecha / Hora">
@@ -153,10 +153,34 @@ const obtenerIdProfesor = () => {
 
 const idProfesor = obtenerIdProfesor()
 const asesorias = ref([])
+const estudiantes = ref([])
 
 onMounted(async () => {
-  await cargarAsesorias()
+  await Promise.all([
+    cargarEstudiantes(),
+    cargarAsesorias()
+  ])
 })
+
+const obtenerNombreEstudiante = (idEstudiante) => {
+  const estudiante = estudiantes.value.find(e => Number(e.id) === Number(idEstudiante))
+  return estudiante?.nombreCompleto || `Alumno #${idEstudiante}`
+}
+
+const obtenerInicialEstudiante = (idEstudiante) => {
+  const nombre = obtenerNombreEstudiante(idEstudiante)
+  return nombre.startsWith('Alumno #') ? '#' : nombre.charAt(0).toUpperCase()
+}
+
+const cargarEstudiantes = async () => {
+  try {
+    const res = await axios.get('/api/estudiantes')
+    estudiantes.value = Array.isArray(res.data) ? res.data : []
+  } catch (error) {
+    console.error('Error al cargar estudiantes', error)
+    estudiantes.value = []
+  }
+}
 
 const cargarAsesorias = async () => {
   if (!idProfesor) {
