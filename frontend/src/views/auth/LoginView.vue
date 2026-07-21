@@ -79,10 +79,11 @@ const login = async () => {
       contrasena: contrasena.value
     })
 
-    // ✅ Guardar datos en localStorage (con camelCase)
+    // ✅ Guardar datos en localStorage (con camelCase y alias para compatibilidad)
     localStorage.setItem('access_token', res.data.token)
     localStorage.setItem('id', res.data.id)
     localStorage.setItem('idRol', res.data.idRol || '')
+    localStorage.setItem('id_rol', res.data.idRol || '')
     localStorage.setItem('nombre', res.data.nombre)
     localStorage.setItem('rol', res.data.rol)
 

@@ -71,11 +71,11 @@
                     </td>
                     <td data-label="Fecha / Hora">
                       <div class="dateTime-cell">
-                        <span>{{ formatearFecha(cita.fecha_cita) }}</span>
-                        <small>{{ formatearHora(cita.fecha_cita) }}</small>
+                        <span>{{ cita.fechaCita }}</span>
+                        <small>{{ cita.horaCita }}</small>
                       </div>
                     </td>
-                    <td data-label="Motivo de Consulta">{{ cita.motivo_consulta || 'No especificado' }}</td>
+                    <td data-label="Motivo de Consulta">{{ cita.motivoConsulta || 'No especificado' }}</td>
                     <td data-label="Estado">
                       <span :class="['status-badge', cita.estado.toLowerCase()]">
                         {{ cita.estado === 'pendiente' ? 'Pendiente' : 'Finalizada' }}
@@ -217,7 +217,7 @@ const cargarCitas = async () => {
   console.log(`📡 Cargando citas para el psicólogo ID: ${idProfesor}`)
   
   try {
-    const res = await axios.get(`/citas-psicologia/profesor/${idProfesor}`)
+    const res = await axios.get(`/api/psychology/citas/profesor/${idProfesor}`)
     citas.value = res.data
     console.log(`✅ Citas cargadas exitosamente: ${citas.value.length} registros`)
   } catch (error) {
@@ -271,7 +271,7 @@ const concluirCita = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await axios.patch(`/citas-psicologia/${id}/finalizar`)
+      await axios.patch(`/api/psychology/citas/${id}/estado?estado=completada`)
       Swal.fire('¡Hecho!', 'La sesión ha sido marcada como finalizada.', 'success')
       await cargarCitas()
     } catch (e) {
@@ -295,7 +295,7 @@ const eliminarCita = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await axios.delete(`/citas-psicologia/${id}`)
+      await axios.delete(`/api/psychology/citas/${id}`)
       Swal.fire('Eliminada', 'La cita ha sido eliminada correctamente.', 'success')
       await cargarCitas()
     } catch (e) {

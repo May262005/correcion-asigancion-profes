@@ -4,9 +4,11 @@ import com.example.m12_mentorship_service.dto.AsesoriaDto;
 import com.example.m12_mentorship_service.entity.AsesoriaEntity.EstadoAsesoria;
 import com.example.m12_mentorship_service.service.mentorshipService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -24,6 +26,13 @@ public class mentorshipController {
     @GetMapping
     public ResponseEntity<List<AsesoriaDto>> getAll() {
         return ResponseEntity.ok(mentorshipService.getAllAsesorias());
+    }
+
+    @GetMapping("/horarios-disponibles")
+    public ResponseEntity<List<String>> getHorariosDisponibles(
+            @RequestParam Long idProfesor,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        return ResponseEntity.ok(mentorshipService.getHorariosDisponibles(idProfesor, fecha));
     }
 
     @GetMapping("/{id}")
