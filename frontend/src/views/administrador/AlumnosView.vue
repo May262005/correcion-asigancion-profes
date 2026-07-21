@@ -53,7 +53,7 @@
               <tr v-for="alumno in currentAlumnos" :key="alumno.id">
                 <td :data-label="'Nombre'">{{ alumno.nombreCompleto }}</td>
                 <td :data-label="'Correo'">{{ alumno.correoElectronico }}</td>
-                <td :data-label="'Grupo'">{{ obtenerNombreGrupo(alumno.idGrupo) }}</td>
+                <td :data-label="'Grupo'">{{ obtenerNombreGrupo(alumno) }}</td>
                 <td :data-label="'Matrícula'">{{ alumno.matricula }}</td>
                 <td :data-label="'Acciones'">
                   <button class="btn-secondary btn-accion" @click="editarAlumno(alumno)">Editar</button>
@@ -197,7 +197,14 @@ const obtenerAlumnos = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_ESTUDIANTES)
-    alumnos.value = res.data
+    // Mapear los datos para tener la estructura que espera el componente
+    alumnos.value = res.data.map(alumno => ({
+      ...alumno,
+      idGrupo: alumno.grupo?.id || null,
+      grupoNombre: alumno.grupo?.nombre || 'Sin grupo',
+      grupoAbreviatura: alumno.grupo?.abreviatura || '',
+      grupoColor: alumno.grupo?.colorIdentificador || '#6c757d'
+    }))
   } catch (error) {
     console.error('Error al obtener alumnos:', error)
     await Swal.fire({
@@ -234,9 +241,26 @@ const obtenerGrupos = async () => {
   }
 }
 
-const obtenerNombreGrupo = (id) => {
-  const grupo = grupos.value.find((g) => g.id === id)
-  return grupo ? grupo.nombre : 'Sin grupo'
+const obtenerNombreGrupo = (alumno) => {
+  // Primero intentamos usar el grupoNombre que mapeamos al obtener los alumnos
+  if (alumno.grupoNombre && alumno.grupoNombre !== 'Sin grupo') {
+    return alumno.grupoNombre
+  }
+  
+  // Si no tiene grupoNombre, buscamos en la lista de grupos por id
+  if (alumno.idGrupo) {
+    const grupo = grupos.value.find((g) => g.id === alumno.idGrupo)
+    if (grupo) {
+      return grupo.nombre
+    }
+  }
+  
+  // Si todo falla, usamos el grupo del objeto original si existe
+  if (alumno.grupo && alumno.grupo.nombre) {
+    return alumno.grupo.nombre
+  }
+  
+  return 'Sin grupo'
 }
 
 const abrirFormularioNuevo = () => {
@@ -256,14 +280,32 @@ const abrirFormularioNuevo = () => {
 const editarAlumno = (alumno) => {
   modoEdicion.value = true
   alumnoEditando.value = alumno.id
+  
+  // Extraer nombre, apellido paterno y materno del nombre completo
   const nombreCompleto = alumno.nombreCompleto || ''
-  const partes = nombreCompleto.split(' ')
+  const partes = nombreCompleto.trim().split(' ')
+  
+  let nombre = ''
+  let apellidoPaterno = ''
+  let apellidoMaterno = ''
+  
+  if (partes.length === 1) {
+    nombre = partes[0]
+  } else if (partes.length === 2) {
+    nombre = partes[0]
+    apellidoPaterno = partes[1]
+  } else if (partes.length >= 3) {
+    nombre = partes[0]
+    apellidoPaterno = partes[1]
+    apellidoMaterno = partes.slice(2).join(' ')
+  }
+  
   formAlumno.value = {
-    nombre: partes[0] || '',
-    apellidoPaterno: partes.slice(1, partes.length - 1).join(' ') || '',
-    apellidoMaterno: partes[partes.length - 1] || '',
+    nombre: nombre,
+    apellidoPaterno: apellidoPaterno,
+    apellidoMaterno: apellidoMaterno,
     correoElectronico: alumno.correoElectronico || '',
-    idGrupo: alumno.idGrupo || '',
+    idGrupo: alumno.idGrupo || alumno.grupo?.id || '',
     matricula: alumno.matricula || '',
   }
   mostrarFormulario.value = true

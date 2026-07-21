@@ -24,8 +24,6 @@ public class EstudianteDTOs {
         
         private String apellidoPaterno;
         private String apellidoMaterno;
-        
-        // ✅ NUEVO: Campo opcional para contraseña
         private String contrasena;
     }
 
@@ -36,6 +34,7 @@ public class EstudianteDTOs {
         private String nombre;
         private String apellidoPaterno;
         private String apellidoMaterno;
+        
         @Email
         private String correoElectronico;
     }
@@ -44,7 +43,12 @@ public class EstudianteDTOs {
     public static class EstudianteResponseDTO {
         private Integer id;
         private String matricula;
-        private Integer idGrupo;
+        
+        // 🔥 CAMBIO IMPORTANTE
+        // Antes: private Integer idGrupo;
+        // Ahora:
+        private GrupoDTO grupo;
+        
         private String nombreCompleto;
         private String correoElectronico;
     }
