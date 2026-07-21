@@ -41,14 +41,14 @@ public class DivisionService {
     }
 
     @Transactional(readOnly = true)
-    public DivisionDto.Response findOne(Integer id) {
+    public DivisionDto.Response findOne(Long id) { // Cambiado a Long
         Division division = divisionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("División no encontrada con ID: " + id));
         return DivisionDto.Response.fromEntity(division);
     }
 
     @Transactional
-    public DivisionDto.Response update(Integer id, DivisionDto.Update dto) {
+    public DivisionDto.Response update(Long id, DivisionDto.Update dto) { // Cambiado a Long
         Division division = divisionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("División no encontrada con ID: " + id));
 
@@ -69,7 +69,7 @@ public class DivisionService {
     }
 
     @Transactional
-    public void delete(Integer id) {
+    public void delete(Long id) { // Cambiado a Long
         if (!divisionRepository.existsById(id)) {
             throw new RuntimeException("División no encontrada con ID: " + id);
         }

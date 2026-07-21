@@ -44,5 +44,5 @@ springdoc:
 
 logging:
   level:
-    com.example.division: DEBUG
+    com.example.m13_division_service: DEBUG
     org.springframework.web: INFO

@@ -65,7 +65,10 @@ spring:
             - id: gene-service
               uri: lb://GENE-SERVICE
               predicates:
-                - Path=/api/gene/**
+            - Path=/api/gene/**
+          filters:
+            - StripPrefix=2
+
             - id: turno-service
               uri: lb://m10-turno-service
               predicates:
@@ -86,11 +89,10 @@ spring:
               predicates:
                 - Path=/api/periodos/**
 
-            # ✅ NUEVO SERVICIO DE DIVISIONES
             - id: division-service
               uri: lb://m13-division-service
               predicates:
-                - Path=/api/divisiones/**
+                - Path=/divisiones/**
           
           globalcors:
             cors-configurations:

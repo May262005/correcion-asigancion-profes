@@ -65,7 +65,7 @@
                       : '-'
                   }}
                 </td>
-                <td :data-label="'División'">{{ obtenerNombreDivision(edificio.idDivision) }}</td>
+                <td :data-label="'División'">{{ obtenerNombreDivision(edificio) }}</td>
                 <td :data-label="'Acciones'">
                   <button class="btn-secondary btn-accion" @click="editarEdificio(edificio)">Editar</button>
                   <button class="btn-danger btn-accion" @click="eliminarEdificio(edificio.id)">Eliminar</button>
@@ -167,7 +167,7 @@ const router = useRouter()
 // CONFIGURACIÓN DE API - Gateway
 // ============================================================
 const API_EDIFICIOS = 'http://localhost:8080/edificios'
-const API_DIVISIONES = 'http://localhost:8080/api/divisiones'
+const API_DIVISIONES = 'http://localhost:8080/divisiones'
 
 // ============================================================
 // NAVEGACIÓN
@@ -220,13 +220,13 @@ const obtenerDivisiones = async () => {
   try {
     const res = await axios.get(API_DIVISIONES)
     divisiones.value = res.data
-    console.log('Divisiones cargadas:', divisiones.value)
+    console.log('Divisiones cargadas exitosamente:', divisiones.value)
   } catch (error) {
-    console.error('Error al obtener divisiones:', error)
+    console.error('Error detallado al obtener divisiones:', error.response || error.message)
     await Swal.fire({
       icon: 'warning',
       title: 'Aviso',
-      text: 'No se pudieron cargar las divisiones. Los edificios se mostrarán sin división.',
+      text: 'No se pudieron cargar las divisiones. Revisa la conexión con el Gateway.',
       confirmButtonColor: '#3ABEF9',
       background: '#ffffff',
       color: '#213547',
@@ -265,10 +265,14 @@ const obtenerEdificios = async () => {
 // ============================================================
 // CRUD - OBTENER NOMBRE DE DIVISIÓN
 // ============================================================
-const obtenerNombreDivision = (idDivision) => {
-  if (!idDivision) return '-'
-  const division = divisiones.value.find(d => d.id === idDivision)
-  return division ? division.nombre : '-'
+const obtenerNombreDivision = (edificio) => {
+  // Buscamos todas las posibles variantes de nombres con las que Java podría mandar la división
+  const idDiv = edificio.idDivision ?? edificio.divisionId ?? edificio.id_division ?? edificio.division?.id
+  
+  if (!idDiv) return 'Sin ID'
+
+  const division = divisiones.value.find(d => String(d.id) === String(idDiv))
+  return division ? division.nombre : 'No coincide con ID: ' + idDiv
 }
 
 // ============================================================

@@ -9,9 +9,8 @@ COPY src ./src
 # Compilamos saltándonos los tests para que sea más rápido en local
 RUN mvn clean package -DskipTests
 
-# 2. Fase de ejecución: Una imagen más ligera que solo corre Java 17
-# Cambia esto en la fase de ejecución:
-FROM eclipse-temurin:21-jre-jammy
+# 2. Fase de ejecución: Una imagen más ligera que solo corre Java 25
+FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
 
 # Nos traemos el .jar compilado en la fase anterior

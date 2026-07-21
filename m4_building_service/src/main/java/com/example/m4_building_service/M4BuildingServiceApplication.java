@@ -3,13 +3,14 @@ package com.example.m4_building_service;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
+@EnableFeignClients
 @EnableDiscoveryClient
 public class M4BuildingServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(M4BuildingServiceApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(M4BuildingServiceApplication.class, args);
+    }
 }
