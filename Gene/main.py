@@ -6,79 +6,14 @@ from db_connector.database import get_db
 from db_connector.data_access import fetch_all_data_for_solver
 from solver_service.scheduler import generate_schedule_for_all_groups, ScheduleResult
 
-import requests
-import asyncio
-from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
-# --- CONFIGURACIÓN DE REGISTRO EN EUREKA (NATAL DE PYTHON) ---
-EUREKA_SERVER = "http://localhost:8761/eureka/apps/GENE-SERVICE"
-INSTANCE_DATA = {
-    "instance": {
-        "instanceId": "localhost:8000",
-        "hostName": "localhost",
-        "app": "GENE-SERVICE",
-        "ipAddr": "127.0.0.1",
-        "status": "UP",
-        "overriddenStatus": "UNKNOWN",
-        "port": {"$": 8000, "@enabled": "true"},
-        "securePort": {"$": 443, "@enabled": "false"},
-        "countryId": 1,
-        "dataCenterInfo": {
-            "@class": "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo",
-            "name": "MyOwn"
-        },
-        "metadata": {}
-    }
-}
+app = FastAPI(title="Solver Service")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Función para intentar registrarse en bucle hasta tener éxito
-    def register_in_eureka():
-        while True:
-            try:
-                response = requests.post(EUREKA_SERVER, json=INSTANCE_DATA, timeout=5)
-                # El código 204 o 200 significa éxito total
-                if response.status_code in [200, 204]:
-                    print("✅ [Cronos] Registrado con éxito en el servidor Eureka")
-                    break
-                else:
-                    print(f"⏳ Eureka respondió con código {response.status_code}. Reintentando en 5 segundos...")
-            except Exception as e:
-                print("⏳ Esperando a que Eureka Server inicie...")
-            
-            import time
-            time.sleep(5)
-
-    # Lanzamos el registro inicial
-    register_in_eureka()
-    
-    # Mantener latido (Heartbeat) cada 30 segundos
-    async def send_heartbeat():
-        while True:
-            await asyncio.sleep(30)
-            try:
-                # Si Eureka lo llega a borrar temporalmente por latencia, el PUT le recordará existir
-                response = requests.put(f"{EUREKA_SERVER}/localhost:8000", timeout=5)
-                if response.status_code == 404:
-                    # Si Eureka responde 404, significa que perdió el registro; volvemos a enviarlo
-                    requests.post(EUREKA_SERVER, json=INSTANCE_DATA, timeout=5)
-            except Exception:
-                pass
-                
-    asyncio.create_task(send_heartbeat())
-    yield
-    
-    # Al apagar: Eliminar de Eureka
-    try:
-        requests.delete(f"{EUREKA_SERVER}/localhost:8000", timeout=5)
-        print("🗑️ Eliminado de Eureka con éxito")
-    except Exception:
-        pass
-# Agregamos el ciclo de vida (lifespan) a FastAPI
-app = FastAPI(title="Solver Service", lifespan=lifespan)
-
-origins = ["*"] 
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -88,6 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
 
 @app.post("/generate")
 async def generate_schedule_endpoint(

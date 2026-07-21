@@ -131,7 +131,7 @@ import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const API_URL = `http://localhost:8080/api/divisiones`
+const API_URL = `http://localhost:8080/divisiones`
 
 const goBack = () => {
   router.back()

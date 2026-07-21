@@ -26,16 +26,21 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         
-        <!-- ❌ ELIMINADO: spring-boot-starter-security -->
-        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         
+        <!-- Netflix Eureka Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud OpenFeign (OBLIGATORIO para que funcione tu ClientFeing) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
         <dependency>

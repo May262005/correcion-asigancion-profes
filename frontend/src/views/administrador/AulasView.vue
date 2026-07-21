@@ -59,7 +59,8 @@
                 <td :data-label="'Abreviatura'">{{ aula.abreviatura || '-' }}</td>
                 <td :data-label="'Capacidad'">{{ aula.capacidad }}</td>
                 <td :data-label="'Ubicación'">{{ aula.ubicacion || '-' }}</td>
-                <td :data-label="'Edificio'">{{ obtenerNombreEdificio(aula.idEdificio) }}</td>
+                <!-- CORREGIDO: Usamos aula.nombreEdificio que viene directo del DTO del microservicio -->
+                <td :data-label="'Edificio'">{{ aula.nombreEdificio || '-' }}</td>
                 <td :data-label="'Acciones'">
                   <button class="btn-secondary btn-accion" @click="editarAula(aula)">Editar</button>
                   <button class="btn-danger btn-accion" @click="eliminarAula(aula.id)">Eliminar</button>
@@ -239,7 +240,7 @@ const obtenerAulas = async () => {
 }
 
 // ============================================================
-// CRUD - OBTENER EDIFICIOS
+// CRUD - OBTENER EDIFICIOS (Para los selects del formulario)
 // ============================================================
 const obtenerEdificios = async () => {
   try {
@@ -248,26 +249,7 @@ const obtenerEdificios = async () => {
     console.log('Edificios cargados:', edificios.value)
   } catch (error) {
     console.error('Error al obtener edificios:', error)
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Aviso',
-      text: 'No se pudieron cargar los edificios. Las aulas se mostrarán sin edificio.',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
   }
-}
-
-// ============================================================
-// CRUD - OBTENER NOMBRE DE EDIFICIO
-// ============================================================
-const obtenerNombreEdificio = (idEdificio) => {
-  if (!idEdificio) return '-'
-  const edificio = edificios.value.find(e => e.id === idEdificio)
-  return edificio ? edificio.nombre : '-'
 }
 
 // ============================================================
@@ -306,7 +288,6 @@ const editarAula = (aula) => {
 // CRUD - GUARDAR AULA
 // ============================================================
 const guardarAula = async () => {
-  // Validaciones
   if (!formAula.value.nombre.trim()) {
     await Swal.fire({
       icon: 'warning',

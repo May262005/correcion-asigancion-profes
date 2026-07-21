@@ -13,7 +13,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/divisiones")
+@RequestMapping("/divisiones") // Corregido sin el /api/ para alinearse con los demás servicios
 @Tag(name = "Divisiones", description = "API para la gestión de divisiones académicas")
 public class DivisionController {
 
@@ -27,7 +27,7 @@ public class DivisionController {
     @Operation(summary = "Crear una nueva división")
     public ResponseEntity<DivisionDto.Response> create(@Valid @RequestBody DivisionDto.Create dto) {
         DivisionDto.Response created = divisionService.create(dto);
-        return ResponseEntity.created(URI.create("/api/divisiones/" + created.getId())).body(created);
+        return ResponseEntity.created(URI.create("/divisiones/" + created.getId())).body(created);
     }
 
     @GetMapping
@@ -38,14 +38,14 @@ public class DivisionController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una división por su ID")
-    public ResponseEntity<DivisionDto.Response> findOne(@PathVariable Integer id) {
+    public ResponseEntity<DivisionDto.Response> findOne(@PathVariable Long id) { // Cambiado a Long
         return ResponseEntity.ok(divisionService.findOne(id));
     }
 
     @PatchMapping("/{id}")
     @Operation(summary = "Actualizar una división existente")
     public ResponseEntity<DivisionDto.Response> update(
-            @PathVariable Integer id,
+            @PathVariable Long id, // Cambiado a Long
             @Valid @RequestBody DivisionDto.Update dto) {
         return ResponseEntity.ok(divisionService.update(id, dto));
     }
@@ -53,7 +53,7 @@ public class DivisionController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una división")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) { // Cambiado a Long
         divisionService.delete(id);
         return ResponseEntity.noContent().build();
     }

@@ -1,8 +1,7 @@
 package com.example.m5_room_service.controller;
 
-// IMPORTS CORREGIDOS: Apuntando al paquete real de tu microservicio m5_room_service
 import com.example.m5_room_service.dto.RoomDto;
-import com.example.m5_room_service.entity.RoomEntity;
+import com.example.m5_room_service.dto.RoomDTOList;
 import com.example.m5_room_service.service.RoomService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,52 +20,46 @@ public class RoomController {
 
     private final RoomService roomService;
 
-    // Inyección de dependencias por constructor
     public RoomController(RoomService roomService) {
         this.roomService = roomService;
     }
 
-    // --- C: CREATE (POST /aulas) ---
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED) // Código HTTP 201 Created
+    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Crea una nueva aula.")
     @ApiResponse(responseCode = "201", description = "Aula creada con éxito.")
-    public RoomEntity create(@Valid @RequestBody RoomDto.Create createRoomDto) {
+    public RoomDto create(@Valid @RequestBody RoomDto.Create createRoomDto) {
         return roomService.create(createRoomDto);
     }
 
-    // --- R: READ (GET /aulas) ---
     @GetMapping
-    @Operation(summary = "Obtiene el listado de todas las aulas.")
+    @Operation(summary = "Obtiene el listado de todas las aulas enriquecido con el edificio.")
     @ApiResponse(responseCode = "200", description = "Listado de aulas.")
-    public List<RoomEntity> findAll() {
+    public List<RoomDTOList> findAll() {
         return roomService.findAll();
     }
 
-    // --- R: READ (GET /aulas/:id) ---
     @GetMapping("/{id}")
     @Operation(summary = "Obtiene un aula por su ID.")
     @ApiResponse(responseCode = "200", description = "Aula encontrada.")
     @ApiResponse(responseCode = "404", description = "Aula no encontrada.")
-    public RoomEntity findOne(@PathVariable Long id) {
+    public RoomDto findOne(@PathVariable Long id) {
         return roomService.findOne(id);
     }
 
-    // --- U: UPDATE (PATCH /aulas/:id) ---
     @PatchMapping("/{id}")
     @Operation(summary = "Actualiza campos de un aula existente.")
     @ApiResponse(responseCode = "200", description = "Aula actualizada con éxito.")
     @ApiResponse(responseCode = "404", description = "Aula no encontrada.")
-    public RoomEntity update(
+    public RoomDto update(
             @PathVariable Long id, 
             @Valid @RequestBody RoomDto.Update updateRoomDto
     ) {
         return roomService.update(id, updateRoomDto);
     }
 
-    // --- D: DELETE (DELETE /aulas/:id) ---
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT) // Código HTTP 204 No Content
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Elimina un aula por su ID.")
     @ApiResponse(responseCode = "204", description = "Aula eliminada con éxito.")
     @ApiResponse(responseCode = "404", description = "Aula no encontrada.")

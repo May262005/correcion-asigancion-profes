@@ -7,8 +7,7 @@ def fetch_all_data_for_solver(db: Session) -> Dict[str, List]:
     data: Dict[str, List] = {}
     
     DAY_MAP = {1: "Lunes", 2: "Martes", 3: "Miércoles", 4: "Jueves", 5: "Viernes"}
-    
-    # ============================================
+   # ============================================
     # 1. GENERAR PERIODOS DE TIEMPO (TimeSlots)
     # ============================================
     timeslots_query = """
@@ -19,15 +18,15 @@ def fetch_all_data_for_solver(db: Session) -> Dict[str, List]:
     FROM 
         turno t,
         generate_series(
-            '2000-01-01'::date + t.hora_inicio, 
-            '2000-01-01'::date + t.hora_fin - interval '1 hour', 
+            '2000-01-01'::date + t.hora_inicio::time, 
+            '2000-01-01'::date + t.hora_fin::time - interval '1 hour', 
             interval '1 hour'
         ) AS slot_start
     JOIN 
         (SELECT generate_series(t.dia_inicio::integer, t.dia_fin::integer) AS day_id FROM turno t GROUP BY 1) d ON true
     WHERE 
-        EXTRACT(HOUR FROM t.hora_inicio) >= 17 
-        AND EXTRACT(HOUR FROM t.hora_fin) <= 22
+        EXTRACT(HOUR FROM t.hora_inicio::time) >= 17 
+        AND EXTRACT(HOUR FROM t.hora_fin::time) <= 22
     ORDER BY id_slot;
     """
 

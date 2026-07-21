@@ -1,7 +1,7 @@
 package com.example.m4_building_service.controller;
 
 import com.example.m4_building_service.dto.BuildingDto;
-import com.example.m4_building_service.entity.BuildingEntity;
+import com.example.m4_building_service.dto.BuildingDTOList;
 import com.example.m4_building_service.service.BuildingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,25 +24,25 @@ public class BuildingController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BuildingEntity create(@Valid @RequestBody BuildingDto.Create createBuildingDto) {
+    public BuildingDto create(@Valid @RequestBody BuildingDto.Create createBuildingDto) {
         return buildingService.create(createBuildingDto);
     }
 
     @GetMapping
     @Operation(summary = "Obtiene el listado de todos los edificios.")
-    public List<BuildingEntity> findAll() {
+    public List<BuildingDTOList> findAll() {
         return buildingService.findAll();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtiene un edificio por su ID.")
-    public BuildingEntity findOne(@PathVariable Long id) {
+    public BuildingDto findOne(@PathVariable Long id) {
         return buildingService.findOne(id);
     }
 
     @PatchMapping("/{id}")
     @Operation(summary = "Actualiza campos de un edificio existente.")
-    public BuildingEntity update(
+    public BuildingDto update(
             @PathVariable Long id,
             @Valid @RequestBody BuildingDto.Update updateBuildingDto) {
         return buildingService.update(id, updateBuildingDto);
