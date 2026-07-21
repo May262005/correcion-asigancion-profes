@@ -1,158 +1,136 @@
 package com.example.m3_prifile_service.service;
 
+import com.example.m3_prifile_service.client.*;
 import com.example.m3_prifile_service.dto.AvatarDto;
 import com.example.m3_prifile_service.dto.ProfileDto;
 import com.example.m3_prifile_service.entity.AvatarEntity;
-import com.example.m3_prifile_service.entity.UsuarioProfileEntity;
 import com.example.m3_prifile_service.repository.AvatarRepository;
-import com.example.m3_prifile_service.repository.UsuarioProfileRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-/**
- * Servicio principal de m3_profile_service.
- *
- * Responsabilidades:
- *  1. CRUD de avatares (catálogo de imágenes disponibles).
- *  2. Consulta y actualización de datos de perfil de un usuario.
- *  3. Cambio de avatar asociado al usuario.
- */
 @Service
 public class ProfileService {
 
-    private final UsuarioProfileRepository usuarioRepo;
-    private final AvatarRepository         avatarRepo;
+    private final UsuarioClient usuarioClient;
+    private final AvatarRepository avatarRepository;
 
-    public ProfileService(UsuarioProfileRepository usuarioRepo,
-                          AvatarRepository         avatarRepo) {
-        this.usuarioRepo = usuarioRepo;
-        this.avatarRepo  = avatarRepo;
+    public ProfileService(UsuarioClient usuarioClient, AvatarRepository avatarRepository) {
+        this.usuarioClient = usuarioClient;
+        this.avatarRepository = avatarRepository;
     }
 
-    // ══════════════════════════════════════════════
-    // AVATARES — catálogo
-    // ══════════════════════════════════════════════
+    public ProfileDto obtenerPerfil(Integer usuarioId) {
+        PerfilCompletoResponse resp = usuarioClient.obtenerPerfil(usuarioId);
+        if (resp == null || resp.getUsuario() == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo obtener el perfil: servicio de usuarios no disponible");
+        }
+        return construirProfileDto(resp.getUsuario());
+    }
 
-    /** Lista todos los avatares disponibles */
+    public ProfileDto actualizarPerfil(Integer usuarioId, ProfileDto dto) {
+        Integer idAvatarSolicitado = dto.getAvatar() != null ? dto.getAvatar().getId() : null;
+
+        // Validación local: si piden cambiar de avatar, el avatar debe existir en NUESTRA tabla
+        if (idAvatarSolicitado != null && !avatarRepository.existsById(idAvatarSolicitado)) {
+            throw new NoSuchElementException("El avatar solicitado no existe: " + idAvatarSolicitado);
+        }
+
+        ActualizarPerfilRequest req = new ActualizarPerfilRequest();
+        req.setNombre(dto.getNombre());
+        req.setApellidoPaterno(dto.getApellidoPaterno());
+        req.setApellidoMaterno(dto.getApellidoMaterno());
+        req.setCorreoElectronico(dto.getCorreoElectronico());
+        req.setIdAvatar(idAvatarSolicitado);
+
+        UsuarioBasicoDTO actualizado = usuarioClient.actualizarPerfil(usuarioId, req);
+        if (actualizado == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo actualizar: servicio de usuarios no disponible");
+        }
+        return construirProfileDto(actualizado);
+    }
+
+    public ProfileDto cambiarAvatar(Integer usuarioId, Integer avatarId) {
+        if (!avatarRepository.existsById(avatarId)) {
+            throw new NoSuchElementException("El avatar solicitado no existe: " + avatarId);
+        }
+        ActualizarPerfilRequest req = new ActualizarPerfilRequest();
+        req.setIdAvatar(avatarId);
+
+        UsuarioBasicoDTO actualizado = usuarioClient.actualizarPerfil(usuarioId, req);
+        if (actualizado == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo cambiar el avatar: servicio de usuarios no disponible");
+        }
+        return construirProfileDto(actualizado);
+    }
+
+    // --- MÉTODOS DE CRUD PARA EL CATÁLOGO DE AVATARES ---
+
     public List<AvatarDto> listarAvatares() {
-        return avatarRepo.findAll()
-                         .stream()
-                         .map(this::toAvatarDto)
-                         .collect(Collectors.toList());
+        return avatarRepository.findAll().stream()
+                .map(this::toAvatarDto)
+                .collect(Collectors.toList());
     }
 
-    /** Obtiene un avatar por su ID */
     public AvatarDto obtenerAvatar(Integer id) {
-        AvatarEntity entity = avatarRepo.findById(id)
-            .orElseThrow(() -> new NoSuchElementException("Avatar no encontrado con id: " + id));
+        AvatarEntity entity = avatarRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Avatar no encontrado: " + id));
         return toAvatarDto(entity);
     }
 
-    /** Crea un nuevo avatar en el catálogo */
     @Transactional
     public AvatarDto crearAvatar(AvatarDto dto) {
         AvatarEntity entity = new AvatarEntity(dto.getImagen(), dto.getNombre());
-        AvatarEntity saved  = avatarRepo.save(entity);
-        return toAvatarDto(saved);
+        return toAvatarDto(avatarRepository.save(entity));
     }
 
-    /** Actualiza imagen y/o nombre de un avatar existente */
     @Transactional
     public AvatarDto actualizarAvatar(Integer id, AvatarDto dto) {
-        AvatarEntity entity = avatarRepo.findById(id)
-            .orElseThrow(() -> new NoSuchElementException("Avatar no encontrado con id: " + id));
+        AvatarEntity entity = avatarRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Avatar no encontrado: " + id));
         entity.setImagen(dto.getImagen());
         entity.setNombre(dto.getNombre());
-        return toAvatarDto(avatarRepo.save(entity));
+        return toAvatarDto(avatarRepository.save(entity));
     }
 
-    /** Elimina un avatar del catálogo */
     @Transactional
     public void eliminarAvatar(Integer id) {
-        if (!avatarRepo.existsById(id)) {
-            throw new NoSuchElementException("Avatar no encontrado con id: " + id);
+        if (!avatarRepository.existsById(id)) {
+            throw new NoSuchElementException("Avatar no encontrado: " + id);
         }
-        avatarRepo.deleteById(id);
+        avatarRepository.deleteById(id);
     }
 
-    // ══════════════════════════════════════════════
-    // PERFIL DE USUARIO
-    // ══════════════════════════════════════════════
-
-    /** Obtiene el perfil completo de un usuario */
-    public ProfileDto obtenerPerfil(Integer usuarioId) {
-        UsuarioProfileEntity entity = usuarioRepo.findById(usuarioId)
-            .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con id: " + usuarioId));
-        return toProfileDto(entity);
+    private AvatarDto toAvatarDto(AvatarEntity entity) {
+        return new AvatarDto(entity.getId(), entity.getImagen(), entity.getNombre());
     }
 
-    /**
-     * Actualiza los datos personales del perfil:
-     * nombre, apellidos y avatar (por su ID).
-     * El correo y el rol NO se modifican aquí.
-     */
-    @Transactional
-    public ProfileDto actualizarPerfil(Integer usuarioId, ProfileDto dto) {
-        UsuarioProfileEntity entity = usuarioRepo.findById(usuarioId)
-            .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con id: " + usuarioId));
-
-        entity.setNombre(dto.getNombre());
-        entity.setApellidoPaterno(dto.getApellidoPaterno());
-        entity.setApellidoMaterno(dto.getApellidoMaterno());
-
-        // Cambio de avatar si viene en el DTO
-        if (dto.getAvatar() != null && dto.getAvatar().getId() != null) {
-            AvatarEntity avatar = avatarRepo.findById(dto.getAvatar().getId())
-                .orElseThrow(() -> new NoSuchElementException(
-                    "Avatar no encontrado con id: " + dto.getAvatar().getId()));
-            entity.setAvatar(avatar);
-        }
-
-        return toProfileDto(usuarioRepo.save(entity));
-    }
-
-    /**
-     * Cambia solo el avatar de un usuario.
-     * Endpoint liviano: PATCH /perfiles/{usuarioId}/avatar/{avatarId}
-     */
-    @Transactional
-    public ProfileDto cambiarAvatar(Integer usuarioId, Integer avatarId) {
-        // Verificamos existencia antes de la actualización directa
-        if (!usuarioRepo.existsById(usuarioId)) {
-            throw new NoSuchElementException("Usuario no encontrado con id: " + usuarioId);
-        }
-        if (!avatarRepo.existsById(avatarId)) {
-            throw new NoSuchElementException("Avatar no encontrado con id: " + avatarId);
-        }
-        usuarioRepo.actualizarAvatar(usuarioId, avatarId);
-        // Recargamos para devolver el estado actualizado
-        return obtenerPerfil(usuarioId);
-    }
-
-    // ══════════════════════════════════════════════
-    // Mappers internos
-    // ══════════════════════════════════════════════
-
-    private AvatarDto toAvatarDto(AvatarEntity e) {
-        return new AvatarDto(e.getId(), e.getImagen(), e.getNombre());
-    }
-
-    private ProfileDto toProfileDto(UsuarioProfileEntity e) {
+    private ProfileDto construirProfileDto(UsuarioBasicoDTO u) {
         ProfileDto dto = new ProfileDto();
-        dto.setId(e.getId());
-        dto.setNombre(e.getNombre());
-        dto.setApellidoPaterno(e.getApellidoPaterno());
-        dto.setApellidoMaterno(e.getApellidoMaterno());
-        dto.setCorreoElectronico(e.getCorreoElectronico());
-        dto.setRol(e.getRol() != null ? e.getRol().name() : null);
-        dto.setFechaRegistro(e.getFechaRegistro() != null
-                             ? e.getFechaRegistro().toString() : null);
-        if (e.getAvatar() != null) {
-            dto.setAvatar(toAvatarDto(e.getAvatar()));
+        dto.setId(u.getId());
+        dto.setNombre(u.getNombre());
+        dto.setApellidoPaterno(u.getApellidoPaterno());
+        dto.setApellidoMaterno(u.getApellidoMaterno());
+        dto.setCorreoElectronico(u.getCorreoElectronico());
+        dto.setRol(u.getRol());
+
+        if (u.getIdAvatar() != null) {
+            AvatarEntity avatarEntity = avatarRepository.findById(u.getIdAvatar()).orElse(null);
+            if (avatarEntity != null) {
+                AvatarDto avatarDto = new AvatarDto();
+                avatarDto.setId(avatarEntity.getId());
+                avatarDto.setImagen(avatarEntity.getImagen());
+                avatarDto.setNombre(avatarEntity.getNombre());
+                dto.setAvatar(avatarDto);
+            }
         }
         return dto;
     }

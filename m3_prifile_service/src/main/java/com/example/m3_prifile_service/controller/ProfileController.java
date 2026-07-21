@@ -34,7 +34,7 @@ import java.util.NoSuchElementException;
  */
 @RestController
 @RequestMapping("/api/v1/profiles")
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
 public class ProfileController {
 
     private final ProfileService profileService;
