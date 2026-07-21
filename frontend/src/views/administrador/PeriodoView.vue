@@ -152,7 +152,7 @@ import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 
 const router = useRouter()
-const API_PERIODOS = `http://localhost:3000/periodos`
+const API_PERIODOS = `http://localhost:8080/api/periodos`
 
 const goBack = () => {
   router.back()

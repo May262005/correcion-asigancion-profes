@@ -32,7 +32,6 @@
         <div class="header-spacer"></div>
       </div>
 
-      <!-- FILTROS -->
       <div class="filtros-container">
         <div class="filtros-buttons">
           <button @click="cambiarFiltro('todos')" :class="['filtro-btn', { active: tipoVista === 'todos' }]">
@@ -125,7 +124,6 @@
       </div>
     </main>
 
-    <!-- Modal del formulario -->
     <div v-if="mostrarFormulario" class="form-overlay" @click.self="cerrarFormulario">
       <div class="form-modal">
         <div class="modal-header">
@@ -195,33 +193,23 @@ import '../../assets/styles.css'
 
 const router = useRouter()
 
-// ============================================================
-// NAVEGACIÓN
-// ============================================================
-const goBack = () => router.back()
-
-// ============================================================
-// CONFIGURACIÓN DE API - Gateway
-// ============================================================
 const API_URL = '/api/profesores'
 
-// ============================================================
-// ESTADO
-// ============================================================
+const goBack = () => {
+  router.back()
+}
+
 const profesores = ref([])
-const itemsPerPage = 5
+const cargando = ref(false)
+const cargandoAccion = ref(false)
+const itemsPerPage = 3
 const currentPage = ref(1)
 const mostrarFormulario = ref(false)
 const modoEdicion = ref(false)
 const profesorEditando = ref(null)
 const tipoVista = ref('todos')
 const terminoBusqueda = ref('')
-const cargando = ref(false)
-const cargandoAccion = ref(false)
 
-// ============================================================
-// FORMULARIO
-// ============================================================
 const formProfesor = ref({
   nombre: '',
   apellidoPaterno: '',
@@ -232,18 +220,13 @@ const formProfesor = ref({
   esPsicologo: false,
 })
 
-// ============================================================
-// COMPUTADAS
-// ============================================================
 const profesoresFiltrados = computed(() => {
   let filtrados = profesores.value
-  
   if (tipoVista.value === 'profesores') {
     filtrados = filtrados.filter(p => !p.esPsicologo)
   } else if (tipoVista.value === 'psicologos') {
     filtrados = filtrados.filter(p => p.esPsicologo)
   }
-  
   if (terminoBusqueda.value.trim()) {
     const busqueda = terminoBusqueda.value.toLowerCase()
     filtrados = filtrados.filter(p => 
@@ -251,7 +234,6 @@ const profesoresFiltrados = computed(() => {
       p.correoElectronico?.toLowerCase().includes(busqueda)
     )
   }
-  
   return filtrados
 })
 
@@ -260,31 +242,24 @@ const indexOfLastProfesor = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstProfesor = computed(() => indexOfLastProfesor.value - itemsPerPage)
 const currentProfesores = computed(() => profesoresFiltrados.value.slice(indexOfFirstProfesor.value, indexOfLastProfesor.value))
 
-// ============================================================
-// MÉTODOS
-// ============================================================
-const handlePageChange = (pageNumber) => { 
-  currentPage.value = pageNumber 
+const handlePageChange = (pageNumber) => {
+  currentPage.value = pageNumber
 }
 
-const cambiarFiltro = (tipo) => { 
+const cambiarFiltro = (tipo) => {
   tipoVista.value = tipo
   currentPage.value = 1
 }
 
-watch(terminoBusqueda, () => { 
-  currentPage.value = 1 
+watch(terminoBusqueda, () => {
+  currentPage.value = 1
 })
 
-// ============================================================
-// CRUD - OBTENER PROFESORES
-// ============================================================
 const obtenerProfesores = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_URL)
     profesores.value = res.data
-    console.log('Profesores cargados:', profesores.value)
   } catch (error) {
     console.error('Error al obtener profesores:', error)
     await Swal.fire({
@@ -302,9 +277,6 @@ const obtenerProfesores = async () => {
   }
 }
 
-// ============================================================
-// CRUD - ABRIR FORMULARIO
-// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   profesorEditando.value = null
@@ -320,17 +292,11 @@ const abrirFormularioNuevo = () => {
   mostrarFormulario.value = true
 }
 
-// ============================================================
-// CRUD - EDITAR PROFESOR
-// ============================================================
 const editarProfesor = (profesor) => {
   modoEdicion.value = true
   profesorEditando.value = profesor.id
-  
-  // Dividir nombre completo en partes
   const nombreCompleto = profesor.nombreCompleto || ''
   const partes = nombreCompleto.split(' ')
-  
   formProfesor.value = {
     nombre: partes[0] || '',
     apellidoPaterno: partes.slice(1, partes.length - 1).join(' ') || '',
@@ -343,68 +309,7 @@ const editarProfesor = (profesor) => {
   mostrarFormulario.value = true
 }
 
-// ============================================================
-// CRUD - GUARDAR PROFESOR
-// ============================================================
 const guardarProfesor = async () => {
-  // Validaciones
-  if (!formProfesor.value.nombre.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El nombre es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formProfesor.value.apellidoPaterno.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El apellido paterno es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formProfesor.value.correoElectronico.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El correo electrónico es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  // Validar formato de teléfono (10 dígitos)
-  if (formProfesor.value.telefono && !/^\d{10}$/.test(formProfesor.value.telefono)) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Formato inválido',
-      text: 'El teléfono debe tener 10 dígitos numéricos',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
   cargandoAccion.value = true
   try {
     const payload = {
@@ -419,6 +324,7 @@ const guardarProfesor = async () => {
 
     if (modoEdicion.value) {
       await axios.patch(`${API_URL}/${profesorEditando.value}`, payload)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: '¡Actualizado!',
@@ -432,6 +338,7 @@ const guardarProfesor = async () => {
       })
     } else {
       await axios.post(API_URL, payload)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: '¡Agregado!',
@@ -447,6 +354,7 @@ const guardarProfesor = async () => {
     cerrarFormulario()
     await obtenerProfesores()
   } catch (error) {
+    cargandoAccion.value = false
     console.error('Error al guardar profesor:', error)
     await Swal.fire({
       icon: 'error',
@@ -463,9 +371,6 @@ const guardarProfesor = async () => {
   }
 }
 
-// ============================================================
-// CRUD - ELIMINAR PROFESOR
-// ============================================================
 const eliminarProfesor = async (id) => {
   const profesor = profesores.value.find(p => p.id === id)
   const tipo = profesor?.esPsicologo ? 'psicólogo' : 'profesor'
@@ -489,6 +394,7 @@ const eliminarProfesor = async (id) => {
     cargandoAccion.value = true
     try {
       await axios.delete(`${API_URL}/${id}`)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: 'Eliminado',
@@ -501,11 +407,11 @@ const eliminarProfesor = async (id) => {
         width: '450px',
       })
       await obtenerProfesores()
-      
       if (currentProfesores.value.length === 0 && currentPage.value > 1) {
         currentPage.value--
       }
     } catch (error) {
+      cargandoAccion.value = false
       console.error('Error al eliminar:', error)
       await Swal.fire({
         icon: 'error',
@@ -523,35 +429,24 @@ const eliminarProfesor = async (id) => {
   }
 }
 
-// ============================================================
-// CRUD - CERRAR FORMULARIO
-// ============================================================
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   modoEdicion.value = false
   profesorEditando.value = null
 }
 
-// ============================================================
-// CICLO DE VIDA
-// ============================================================
 onMounted(() => {
   obtenerProfesores()
 })
 </script>
 
 <style scoped>
-/* =======================
-   LISTA DE PROFESORES - CON BOTÓN REGRESAR
-======================= */
-
 .profesores-main {
   max-width: 1200px;
   margin: 40px auto;
   padding: 0 20px;
 }
 
-/* Header con botón a la izquierda y título centrado */
 .profesores-header {
   display: flex;
   align-items: center;
@@ -613,7 +508,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* Estilos para filtros */
 .filtros-container {
   background: white;
   border-radius: 16px;
@@ -707,9 +601,6 @@ onMounted(() => {
   color: #64748b;
 }
 
-/* =======================
-   LOADING
-======================= */
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -747,9 +638,6 @@ onMounted(() => {
   z-index: 2000;
 }
 
-/* =======================
-   EMPTY STATE
-======================= */
 .empty-state {
   background: white;
   border-radius: 20px;
@@ -773,7 +661,6 @@ onMounted(() => {
   color: #94a3b8;
 }
 
-/* Tarjeta blanca */
 .profesores-card {
   background: white;
   border-radius: 20px;
@@ -884,9 +771,6 @@ onMounted(() => {
   margin-right: 8px;
 }
 
-/* =======================
-   MODAL (ESTILO PERFIL)
-======================= */
 .form-overlay {
   position: fixed;
   top: 0;
@@ -1029,110 +913,32 @@ onMounted(() => {
   background: #f1f5f9;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
-  .profesores-main {
-    padding: 0 15px;
-  }
-  
-  .profesores-card {
-    padding: 20px;
-  }
-  
-  .form-grid-layout {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .styled-table th,
-  .styled-table td {
-    padding: 10px 12px;
-  }
-  
-  .btn-accion {
-    margin: 2px;
-  }
-  
-  .filtros-buttons {
-    flex-direction: column;
-  }
-  
-  .filtro-btn {
-    justify-content: center;
-  }
+  .profesores-main { padding: 0 15px; }
+  .profesores-card { padding: 20px; }
+  .form-grid-layout { grid-template-columns: 1fr; gap: 12px; }
+  .styled-table th, .styled-table td { padding: 10px 12px; }
+  .btn-accion { margin: 2px; }
+  .filtros-buttons { flex-direction: column; }
+  .filtro-btn { justify-content: center; }
 }
 
 @media (max-width: 600px) {
-  .profesores-header {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  .header-spacer {
-    display: none;
-  }
-  
-  .btn-back-icon {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-  
-  .header-text {
-    flex: none;
-    width: 100%;
-    margin-top: 10px;
-  }
-  
-  .header-text h1 {
-    font-size: 1.5rem;
-  }
+  .profesores-header { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .header-spacer { display: none; }
+  .btn-back-icon { position: absolute; left: 0; top: 0; }
+  .header-text { flex: none; width: 100%; margin-top: 10px; }
+  .header-text h1 { font-size: 1.5rem; }
 }
 
 @media (max-width: 480px) {
-  .styled-table thead {
-    display: none;
-  }
-  
-  .styled-table tbody tr {
-    display: block;
-    margin-bottom: 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 10px;
-  }
-  
-  .styled-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 10px;
-    border-bottom: 1px solid #e2e8f0;
-    text-align: right;
-  }
-  
-  .styled-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #334155;
-    text-align: left;
-  }
-  
-  .styled-table td:last-child {
-    border-bottom: none;
-  }
-  
-  .btn-accion {
-    width: auto;
-  }
-  
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .modal-footer button {
-    width: 100%;
-  }
+  .styled-table thead { display: none; }
+  .styled-table tbody tr { display: block; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; }
+  .styled-table td { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  .styled-table td::before { content: attr(data-label); font-weight: 600; color: #334155; text-align: left; }
+  .styled-table td:last-child { border-bottom: none; }
+  .btn-accion { width: auto; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer button { width: 100%; }
 }
 </style>
