@@ -106,16 +106,16 @@
                 <tr v-for="cita in historialCitas" :key="cita.id">
                   <td data-label="Psicólogo(a)">
                     <div class="date-cell">
-                      <span>{{ cita.display_psicologo }}</span>
+                      <span>Psicólogo #{{ cita.idProfesor }}</span>
                     </div>
                   </td>
                   <td data-label="Fecha / Hora">
                     <div class="date-cell">
-                      <span>{{ formatFecha(cita.fecha_cita) }}</span>
-                      <small>{{ cita.hora_cita }}</small>
+                      <span>{{ formatFecha(cita.fechaCita) }}</span>
+                      <small>{{ cita.horaCita }}</small>
                     </div>
                    </td>
-                  <td data-label="Motivo">{{ cita.motivo_consulta || 'No especificado' }}</td>
+                  <td data-label="Motivo">{{ cita.motivoConsulta || 'No especificado' }}</td>
                   <td data-label="Estado">
                     <span :class="['status-badge', cita.estado.toLowerCase()]">
                       {{ getEstadoTexto(cita.estado) }}
@@ -207,7 +207,7 @@ const resetForm = () => {
 
 const cargarPsicologos = async () => {
   try {
-    const res = await axios.get('/profesores/psicologos')
+    const res = await axios.get('/api/profesores/psicologos')
     psicologos.value = res.data
     console.log('✅ Psicólogos cargados:', psicologos.value.length)
   } catch (error) {
@@ -225,7 +225,7 @@ const cargarHistorialCitas = async () => {
   cargandoHistorial.value = true
   try {
     console.log('🔍 Consultando citas para estudiante ID:', idEstudiante)
-    const res = await axios.get(`/cita-psicologica/estudiante/${idEstudiante}`)
+    const res = await axios.get(`/api/psychology/citas/estudiante/${idEstudiante}`)
     
     if (res.data && Array.isArray(res.data)) {
       historialCitas.value = res.data
@@ -269,18 +269,16 @@ const confirmarCita = async () => {
   if (result.isConfirmed) {
     enviando.value = true
     try {
-      // Construir fecha completa con hora
-      const fechaHora = `${form.value.fecha_cita}T${form.value.hora_cita}:00`
-      
       const payload = {
-        id_estudiante: parseInt(idEstudiante),
-        id_profesor: parseInt(form.value.id_profesor),
-        fecha_cita: fechaHora,
-        motivo_consulta: form.value.motivo_consulta || 'Sin motivo especificado'
+        idEstudiante: parseInt(idEstudiante),
+        idProfesor: parseInt(form.value.id_profesor),
+        fechaCita: form.value.fecha_cita,
+        horaCita: form.value.hora_cita,
+        motivoConsulta: form.value.motivo_consulta || 'Sin motivo especificado'
       }
 
-      console.log('📤 Enviando payload:', payload)
-      const response = await axios.post('/cita-psicologica/agendar', payload)
+      console.log('📤 Enviando payload con camelCase:', payload)
+      const response = await axios.post('/api/psychology/citas', payload)
       console.log('✅ Respuesta:', response.data)
 
       await Swal.fire('¡Listo!', 'Tu cita ha sido agendada con éxito.', 'success')

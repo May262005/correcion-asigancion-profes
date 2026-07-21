@@ -209,7 +209,7 @@ const obtenerIniciales = (usuario) => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get(`/usuario/perfil/${id}`)
+    const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
   } catch (e) {
     console.error('Error al cargar perfil:', e)
@@ -296,8 +296,8 @@ const guardarCambios = async () => {
     }
     if (formData.value.password) datosActualizar.password = formData.value.password
     
-    await axios.put(`/usuario/perfil/${id}`, datosActualizar)
-    const res = await axios.get(`/usuario/perfil/${id}`)
+    await axios.put(`/api/usuario/perfil/${id}`, datosActualizar)
+    const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
     mostrarFormulario.value = false
     Swal.fire({ icon: 'success', title: '¡Actualizado!', showConfirmButton: false, timer: 1500 })

@@ -55,26 +55,26 @@
                   <tr v-for="cita in asesorias" :key="cita.id">
                     <td data-label="Alumno">
                       <div class="user-info-cell">
-                        <div class="user-avatar-mini">{{ cita.alumno_nombre.charAt(0) }}</div>
-                        <span>{{ cita.alumno_nombre }}</span>
+                        <div class="user-avatar-mini">#</div>
+                        <span>Alumno #{{ cita.idEstudiante }}</span>
                       </div>
                     </td>
                     <td data-label="Fecha / Hora">
                       <div class="dateTime-cell">
-                        <span>{{ cita.fecha }}</span>
-                        <small>{{ cita.hora }}</small>
+                        <span>{{ cita.fechaAsesoria }}</span>
+                        <small>{{ cita.horaAsesoria }}</small>
                       </div>
                     </td>
-                    <td data-label="Asunto">{{ cita.asunto }}</td>
+                    <td data-label="Asunto">{{ cita.temaDuda || 'Sin tema' }}</td>
                     <td data-label="Estado">
-                      <span :class="['status-badge', cita.status.toLowerCase()]">
-                        {{ cita.status }}
+                      <span :class="['status-badge', (cita.estado || 'pendiente').toLowerCase()]">
+                        {{ cita.estado || 'pendiente' }}
                       </span>
                     </td>
                     <td data-label="Acciones">
                       <div class="btn-actions-group">
                         <button 
-                          v-if="cita.status.toLowerCase() === 'pendiente'"
+                          v-if="(cita.estado || 'pendiente').toLowerCase() === 'pendiente'"
                           @click="marcarComoTomada(cita.id)" 
                           class="btn-icon-action check" 
                           title="Marcar como tomada"
@@ -164,7 +164,7 @@ const cargarAsesorias = async () => {
     return
   }
   try {
-    const res = await axios.get(`/asesorias/profesor/${idProfesor}`)
+    const res = await axios.get(`/api/mentorship/asesorias/profesor/${idProfesor}`)
     asesorias.value = res.data
   } catch (error) {
     console.error("Error al cargar asesorías", error)
@@ -184,7 +184,7 @@ const marcarComoTomada = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await axios.patch(`/asesorias/${id}/completar`)
+      await axios.patch(`/api/mentorship/asesorias/${id}/estado?estado=completada`)
       Swal.fire('¡Hecho!', 'La asesoría ha sido marcada como tomada.', 'success')
       cargarAsesorias()
     } catch (error) {
@@ -206,7 +206,7 @@ const eliminarAsesoria = async (id) => {
 
   if (result.isConfirmed) {
     try {
-      await axios.delete(`/asesorias/${id}`)
+      await axios.delete(`/api/mentorship/asesorias/${id}`)
       Swal.fire('Eliminada', 'El registro ha sido borrado.', 'success')
       cargarAsesorias()
     } catch (error) {

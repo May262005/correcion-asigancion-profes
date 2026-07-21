@@ -7,6 +7,9 @@ import com.example.m12_mentorship_service.repository.AsesoriaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,6 +38,22 @@ public class mentorshipService {
 
     public AsesoriaDto getAsesoriaById(Long id) {
         return toDto(findAsesoria(id));
+    }
+
+    public List<String> getHorariosDisponibles(Long idProfesor, LocalDate fecha) {
+        List<String> horariosBase = Arrays.asList(
+                "09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"
+        );
+
+        List<String> ocupados = asesoriaRepository.findByIdProfesor(idProfesor).stream()
+                .filter(asesoria -> fecha.equals(asesoria.getFechaAsesoria()))
+                .map(AsesoriaEntity::getHoraAsesoria)
+                .map(LocalTime::toString)
+                .collect(Collectors.toList());
+
+        return horariosBase.stream()
+                .filter(horario -> !ocupados.contains(horario))
+                .collect(Collectors.toList());
     }
 
     public List<AsesoriaDto> getAsesoriasByEstudiante(Long idEstudiante) {

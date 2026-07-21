@@ -126,16 +126,16 @@
                 <tr v-for="cita in historial" :key="cita.id">
                   <td data-label="Profesor">
                     <div class="date-cell">
-                      <span>{{ cita.display_profe || 'Docente' }}</span>
+                      <span>Profesor #{{ cita.idProfesor }}</span>
                     </div>
                   </td>
                   <td data-label="Fecha / Hora">
                     <div class="date-cell">
-                      <span>{{ formatFecha(cita.fecha_asesoria) }}</span>
-                      <small>{{ cita.hora_asesoria }}</small>
+                      <span>{{ formatFecha(cita.fechaAsesoria) }}</span>
+                      <small>{{ cita.horaAsesoria }}</small>
                     </div>
                   </td>
-                  <td data-label="Asunto">{{ cita.tema_duda || 'Sin tema' }}</td>
+                  <td data-label="Asunto">{{ cita.temaDuda || 'Sin tema' }}</td>
                   <td data-label="Estado">
                     <span :class="['status-badge', cita.estado || 'pendiente']">
                       {{ getEstadoTexto(cita.estado || 'pendiente') }}
@@ -230,7 +230,7 @@ const onProfesorChange = () => {
 
 const cargarProfesores = async () => {
   try {
-    const res = await axios.get('/profesores')
+    const res = await axios.get('/api/profesores')
     profesores.value = res.data.map(p => ({
       id: p.id,
       nombre_mostrar: p.usuario ? 
@@ -256,7 +256,7 @@ const cargarHistorial = async () => {
   errorCargando.value = false
   
   try {
-    const url = `/asesorias/estudiante/${idEstudiante}`
+    const url = `/api/mentorship/asesorias/estudiante/${idEstudiante}`
     console.log('🔍 URL de consulta:', url)
     
     const res = await axios.get(url)
@@ -286,9 +286,9 @@ const cargarHistorial = async () => {
 const cargarHorariosDisponibles = async () => {
   if (form.value.id_profesor && form.value.fecha_asesoria) {
     try {
-      const res = await axios.get('/asesorias/horarios-disponibles', {
+      const res = await axios.get('/api/mentorship/asesorias/horarios-disponibles', {
         params: {
-          id_profesor: form.value.id_profesor,
+          idProfesor: form.value.id_profesor,
           fecha: form.value.fecha_asesoria
         }
       })
@@ -341,18 +341,17 @@ const confirmarAgendamiento = async () => {
   if (result.isConfirmed) {
     enviando.value = true
     try {
-      // 🔴 IMPORTANTE: Incluir id_estudiante en el payload
       const payload = {
-        id_estudiante: parseInt(idEstudiante), // ENVIAR EL ID_ROL
-        id_profesor: parseInt(form.value.id_profesor),
-        id_asignatura: 1, // Asignatura por defecto
-        tema_duda: form.value.tema_duda,
-        fecha_asesoria: form.value.fecha_asesoria,
-        hora_asesoria: `${form.value.hora_asesoria}:00`
+        idEstudiante: parseInt(idEstudiante),
+        idProfesor: parseInt(form.value.id_profesor),
+        idAsignatura: 1,
+        temaDuda: form.value.tema_duda,
+        fechaAsesoria: form.value.fecha_asesoria,
+        horaAsesoria: `${form.value.hora_asesoria}:00`
       }
 
-      console.log('📤 Enviando payload con id_estudiante:', payload)
-      const response = await axios.post('/asesorias/agendar', payload)
+      console.log('📤 Enviando payload con camelCase:', payload)
+      const response = await axios.post('/api/mentorship/asesorias', payload)
       console.log('✅ Respuesta:', response.data)
 
       await Swal.fire({
