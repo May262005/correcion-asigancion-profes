@@ -5,24 +5,22 @@
         <router-link to="/alumno" class="nav-figure">
           <img src="../../imagenes/logo.png" class="nav-logo" alt="Logo Cronos" />
         </router-link>
-
         <label class="nav-toggle" for="menu-input">
           <input type="checkbox" id="menu-input" class="nav-input" />
         </label>
-
         <ul class="nav-list">
-          <li class="nav-item">
-            <router-link to="/alumno" class="nav-link">Inicio</router-link>
-          </li>
-          <li class="nav-item">
-            <router-link to="/alumno/perfil" class="nav-link">Perfil</router-link>
-          </li>
+          <li class="nav-item"><router-link to="/alumno" class="nav-link">Inicio</router-link></li>
+          <li class="nav-item"><router-link to="/alumno/perfil" class="nav-link">Perfil</router-link></li>
         </ul>
       </div>
     </nav>
 
+    <div v-if="cargandoAccion" class="action-loading">
+      <div class="spinner"></div>
+      <p>Procesando...</p>
+    </div>
+
     <main class="perfil-main">
-      <!-- HEADER CON BOTÓN REGRESAR -->
       <div class="perfil-header">
         <button @click="goBack" class="btn-back-icon" title="Volver al Inicio">
           <i class="fas fa-arrow-left"></i>
@@ -45,7 +43,7 @@
             <span class="avatar-text">{{ obtenerIniciales(datos.usuario) }}</span>
           </div>
           <h2 class="user-full-name">
-            {{ datos.usuario.nombre }} {{ datos.usuario.apellido_paterno }}
+            {{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }}
           </h2>
           <span class="user-role-badge">Estudiante</span>
         </div>
@@ -57,7 +55,7 @@
             <div class="info-icon"><i class="fas fa-envelope"></i></div>
             <div class="info-details">
               <span class="info-label">Correo Electrónico</span>
-              <span class="info-value">{{ datos.usuario.correo_electronico || 'N/A' }}</span>
+              <span class="info-value">{{ datos.usuario.correoElectronico || 'N/A' }}</span>
             </div>
           </div>
 
@@ -65,7 +63,7 @@
             <div class="info-icon"><i class="fas fa-lock"></i></div>
             <div class="info-details">
               <span class="info-label">Contraseña</span>
-              <span class="info-value">{{ datos.usuario.passwordVisible || '********' }}</span>
+              <span class="info-value">********</span>
             </div>
           </div>
 
@@ -82,7 +80,15 @@
               <div class="info-icon"><i class="fas fa-users"></i></div>
               <div class="info-details">
                 <span class="info-label">Grupo</span>
-                <span class="info-value">{{ datos.extra.grupo?.nombre || 'Sin grupo' }}</span>
+                <span class="info-value">
+                  <span v-if="datos.extra.grupo">
+                    {{ datos.extra.grupo.nombre || 'Sin grupo' }}
+                    <span class="grupo-badge" :style="{ backgroundColor: datos.extra.grupo.colorIdentificador || '#6c757d' }">
+                      {{ datos.extra.grupo.abreviatura || '' }}
+                    </span>
+                  </span>
+                  <span v-else>Sin grupo</span>
+                </span>
               </div>
             </div>
           </template>
@@ -114,7 +120,7 @@
             <h2>Actualizar Datos</h2>
             <button class="close-btn" @click="cancelarEdicion">&times;</button>
           </div>
-          
+
           <div class="modal-body">
             <div class="form-grid-layout">
               <div class="input-group">
@@ -124,24 +130,22 @@
 
               <div class="input-group">
                 <label>Apellido Paterno</label>
-                <input v-model="formData.apellido_paterno" type="text" :class="{ error: errors.apellido_paterno }" />
+                <input v-model="formData.apellidoPaterno" type="text" :class="{ error: errors.apellidoPaterno }" />
               </div>
 
               <div class="input-group">
                 <label>Apellido Materno</label>
-                <input v-model="formData.apellido_materno" type="text" />
+                <input v-model="formData.apellidoMaterno" type="text" />
               </div>
 
               <div class="input-group">
                 <label>Correo Institucional</label>
-                <input v-model="formData.correo_electronico" type="email" :class="{ error: errors.correo_electronico }" />
+                <input v-model="formData.correoElectronico" type="email" :class="{ error: errors.correoElectronico }" />
               </div>
 
               <div class="input-group full-width">
                 <label>Nueva Contraseña (opcional)</label>
-                <div class="password-wrapper">
-                  <input v-model="formData.password" type="password" placeholder="Mínimo 8 caracteres" />
-                </div>
+                <input v-model="formData.password" type="password" placeholder="Mínimo 8 caracteres" />
               </div>
 
               <div v-if="formData.password" class="input-group full-width">
@@ -170,41 +174,38 @@ import axios from "@/utils/axios-config"
 import Swal from "sweetalert2"
 
 const router = useRouter()
+const id = localStorage.getItem("id")
+const datos = ref({ usuario: null, extra: null })
+const cargando = ref(true)
+const cargandoAccion = ref(false)
+const mostrarFormulario = ref(false)
+const guardando = ref(false)
 
 const goBack = () => {
   router.push('/alumno')
 }
 
-const id = localStorage.getItem("id")
-const datos = ref({
-  usuario: null,
-  extra: null
-})
-const cargando = ref(true)
-const mostrarFormulario = ref(false)
-const guardando = ref(false)
-
 const formData = ref({
   nombre: '',
-  apellido_paterno: '',
-  apellido_materno: '',
-  correo_electronico: '',
+  apellidoPaterno: '',
+  apellidoMaterno: '',
+  correoElectronico: '',
   password: '',
   confirmarPassword: ''
 })
 
 const errors = ref({
   nombre: false,
-  apellido_paterno: false,
-  correo_electronico: false,
+  apellidoPaterno: false,
+  correoElectronico: false,
   confirmarPassword: false
 })
 
 const obtenerIniciales = (usuario) => {
   if (!usuario) return '?'
-  const nombres = usuario.nombre?.split(' ')[0] || ''
-  const apellido = usuario.apellido_paterno?.split(' ')[0] || ''
-  return (nombres[0] || '?') + (apellido[0] || '')
+  const n = usuario.nombre?.charAt(0) || ''
+  const a = usuario.apellidoPaterno?.charAt(0) || ''
+  return (n + a).toUpperCase()
 }
 
 onMounted(async () => {
@@ -213,16 +214,11 @@ onMounted(async () => {
     datos.value = res.data
   } catch (e) {
     console.error('Error al cargar perfil:', e)
-    Swal.fire({
+    await Swal.fire({
       icon: 'error',
       title: 'Error',
       text: 'No se pudo cargar el perfil',
-      confirmButtonText: 'Aceptar',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#E54848',
-      customClass: { confirmButton: 'btn-primary' },
-      buttonsStyling: false
+      confirmButtonColor: '#3abef9'
     })
   } finally {
     cargando.value = false
@@ -231,19 +227,14 @@ onMounted(async () => {
 
 const cerrarSesion = async () => {
   const confirm = await Swal.fire({
-    title: '¿Deseas cerrar sesión?',
+    title: '¿Cerrar sesión?',
     text: "Tendrás que volver a ingresar tus credenciales.",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Sí, salir',
     cancelButtonText: 'Cancelar',
-    background: '#ffffff',
-    color: '#213547',
-    iconColor: '#f39c12',
-    customClass: { confirmButton: 'btn-primary', cancelButton: 'btn-secondary' },
-    buttonsStyling: false
+    confirmButtonColor: '#3abef9',
   })
-
   if (confirm.isConfirmed) {
     localStorage.clear()
     router.push({ name: 'landin-page' })
@@ -254,32 +245,31 @@ const editarPerfil = () => {
   if (!datos.value.usuario) return
   formData.value = {
     nombre: datos.value.usuario.nombre || '',
-    apellido_paterno: datos.value.usuario.apellido_paterno || '',
-    apellido_materno: datos.value.usuario.apellido_materno || '',
-    correo_electronico: datos.value.usuario.correo_electronico || '',
+    apellidoPaterno: datos.value.usuario.apellidoPaterno || '',
+    apellidoMaterno: datos.value.usuario.apellidoMaterno || '',
+    correoElectronico: datos.value.usuario.correoElectronico || '',
     password: '',
     confirmarPassword: ''
   }
+  errors.value = { nombre: false, apellidoPaterno: false, correoElectronico: false, confirmarPassword: false }
   mostrarFormulario.value = true
 }
 
 const validarFormulario = () => {
   let valido = true
-  errors.value = { nombre: false, apellido_paterno: false, correo_electronico: false, confirmarPassword: false }
+  errors.value = { nombre: false, apellidoPaterno: false, correoElectronico: false, confirmarPassword: false }
   
   if (!formData.value.nombre.trim()) { errors.value.nombre = true; valido = false }
-  if (!formData.value.apellido_paterno.trim()) { errors.value.apellido_paterno = true; valido = false }
+  if (!formData.value.apellidoPaterno.trim()) { errors.value.apellidoPaterno = true; valido = false }
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!formData.value.correo_electronico.trim() || !emailRegex.test(formData.value.correo_electronico)) {
-    errors.value.correo_electronico = true
-    valido = false
+  if (!formData.value.correoElectronico.trim() || !emailRegex.test(formData.value.correoElectronico)) {
+    errors.value.correoElectronico = true; valido = false
   }
   
   if (formData.value.password && formData.value.password !== formData.value.confirmarPassword) {
-    errors.value.confirmarPassword = true
-    valido = false
-    Swal.fire({ icon: 'error', title: 'Error', text: 'Las contraseñas no coinciden' })
+    errors.value.confirmarPassword = true; valido = false
+    Swal.fire({ icon: 'warning', title: 'Las contraseñas no coinciden' })
   }
   return valido
 }
@@ -287,35 +277,41 @@ const validarFormulario = () => {
 const guardarCambios = async () => {
   if (!validarFormulario()) return
   guardando.value = true
+  cargandoAccion.value = true
   try {
     const datosActualizar = {
       nombre: formData.value.nombre,
-      apellido_paterno: formData.value.apellido_paterno,
-      apellido_materno: formData.value.apellido_materno,
-      correo_electronico: formData.value.correo_electronico
+      apellidoPaterno: formData.value.apellidoPaterno,
+      apellidoMaterno: formData.value.apellidoMaterno,
+      correoElectronico: formData.value.correoElectronico
     }
-    if (formData.value.password) datosActualizar.password = formData.value.password
-    
+    if (formData.value.password) {
+      datosActualizar.password = formData.value.password
+    }
+
     await axios.put(`/api/usuario/perfil/${id}`, datosActualizar)
     const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
     mostrarFormulario.value = false
-    Swal.fire({ icon: 'success', title: '¡Actualizado!', showConfirmButton: false, timer: 1500 })
+    await Swal.fire({ icon: 'success', title: 'Perfil actualizado', showConfirmButton: false, timer: 1500 })
   } catch (error) {
-    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar' })
+    await Swal.fire({ 
+      icon: 'error', 
+      title: 'Error', 
+      text: error.response?.data?.message || 'No se pudo actualizar el perfil' 
+    })
   } finally {
     guardando.value = false
+    cargandoAccion.value = false
   }
 }
 
-const cancelarEdicion = () => { mostrarFormulario.value = false }
+const cancelarEdicion = () => { 
+  mostrarFormulario.value = false 
+}
 </script>
 
 <style scoped>
-/* =======================
-   PERFIL ALUMNO - CON BOTÓN REGRESAR
-======================= */
-
 .perfil-main {
   max-width: 800px;
   margin: 40px auto;
@@ -323,7 +319,6 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   text-align: center;
 }
 
-/* Header con botón a la izquierda y título centrado */
 .perfil-header {
   display: flex;
   align-items: center;
@@ -385,11 +380,10 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   flex-shrink: 0;
 }
 
-/* CARD DE PERFIL */
 .perfil-card {
   background: white;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   padding: 40px;
   border: 1px solid #f0f0f0;
 }
@@ -441,7 +435,6 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   margin: 30px 0;
 }
 
-/* GRID DE INFO */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -485,6 +478,20 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
 .info-value {
   font-weight: 600;
   color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.grupo-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .perfil-actions {
@@ -493,7 +500,6 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   justify-content: center;
 }
 
-/* BOTONES */
 .btn-primary {
   background: #3abef9;
   color: white;
@@ -512,6 +518,11 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   background: #29a9e0;
 }
 
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-danger {
   background: #ffeded;
   color: #ef4444;
@@ -527,7 +538,64 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   background: #fee2e2;
 }
 
-/* MODAL DE EDICIÓN */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
+}
+
 .form-overlay {
   position: fixed;
   top: 0;
@@ -560,14 +628,17 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   border-bottom: 1px solid #e2e8f0;
 }
 
-.modal-header h2 { font-size: 1.25rem; margin: 0; }
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
 
 .close-btn {
   background: none;
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .close-btn:hover {
@@ -592,7 +663,9 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   text-align: left;
 }
 
-.input-group.full-width { grid-column: span 2; }
+.input-group.full-width {
+  grid-column: span 2;
+}
 
 .input-group label {
   font-size: 0.85rem;
@@ -605,7 +678,7 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   padding: 10px 14px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
 }
 
@@ -615,7 +688,9 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   box-shadow: 0 0 0 3px rgba(58, 190, 249, 0.1);
 }
 
-.input-group input.error { border-color: #ef4444; }
+.input-group input.error {
+  border-color: #ef4444;
+}
 
 .modal-footer {
   padding: 20px 25px;
@@ -623,6 +698,7 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   flex-direction: row-reverse;
   gap: 10px;
   background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
 }
 
 .btn-secondary {
@@ -639,57 +715,31 @@ const cancelarEdicion = () => { mostrarFormulario.value = false }
   background: #f1f5f9;
 }
 
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
 
-/* TRANSICIONES */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 
-/* Responsive */
+@media (max-width: 768px) {
+  .perfil-main { padding: 0 15px; }
+  .perfil-card { padding: 25px; }
+  .info-grid { grid-template-columns: 1fr; }
+  .form-grid-layout { grid-template-columns: 1fr; gap: 12px; }
+  .input-group.full-width { grid-column: span 1; }
+  .perfil-actions { flex-direction: column; }
+  .perfil-actions button { width: 100%; justify-content: center; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer button { width: 100%; }
+}
+
 @media (max-width: 600px) {
-  .perfil-header {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  .header-spacer {
-    display: none;
-  }
-  
-  .btn-back-icon {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-  
-  .header-text {
-    flex: none;
-    width: 100%;
-    margin-top: 10px;
-  }
-  
-  .header-text h1 {
-    font-size: 1.5rem;
-  }
-  
-  .form-grid-layout { 
-    grid-template-columns: 1fr; 
-  }
-  
-  .input-group.full-width { 
-    grid-column: span 1; 
-  }
-  
-  .perfil-actions { 
-    flex-direction: column; 
-  }
-  
-  .modal-footer { 
-    flex-direction: column; 
-  }
-  
-  .modal-footer button {
-    width: 100%;
-  }
+  .perfil-header { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .header-spacer { display: none; }
+  .btn-back-icon { position: absolute; left: 0; top: 0; }
+  .header-text { flex: none; width: 100%; margin-top: 10px; }
+  .header-text h1 { font-size: 1.5rem; }
 }
 </style>

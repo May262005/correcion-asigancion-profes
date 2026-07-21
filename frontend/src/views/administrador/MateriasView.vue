@@ -23,7 +23,6 @@
     </div>
 
     <main class="materias-main">
-      <!-- HEADER CON BOTÓN REGRESAR -->
       <div class="materias-header">
         <button @click="goBack" class="btn-back-icon" title="Volver al Dashboard">
           <i class="fas fa-arrow-left"></i>
@@ -107,7 +106,6 @@
       </div>
     </main>
 
-    <!-- MODAL -->
     <div v-if="mostrarFormulario" class="form-overlay" @click.self="cerrarFormulario">
       <div class="form-modal">
         <div class="modal-header">
@@ -187,43 +185,30 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from '../../utils/axios-config'
+import axios from 'axios'
 import Swal from 'sweetalert2'
 import '../../assets/styles.css'
 
 const router = useRouter()
 
-// ============================================================
-// CONFIGURACIÓN DE API
-// ============================================================
 const API_URL = `http://localhost:8080/api/curriculum`
 const API_DIVISIONES = `http://localhost:8080/api/divisiones`
 
-// ============================================================
-// NAVEGACIÓN
-// ============================================================
 const goBack = () => {
   router.back()
 }
 
-// ============================================================
-// ESTADO
-// ============================================================
 const materias = ref([])
 const divisiones = ref([])
 
-const itemsPerPage = 5
+const cargando = ref(false)
+const cargandoAccion = ref(false)
+const itemsPerPage = 3
 const currentPage = ref(1)
 const mostrarFormulario = ref(false)
 const modoEdicion = ref(false)
 const materiaEditando = ref(null)
 
-const cargando = ref(false)
-const cargandoAccion = ref(false)
-
-// ============================================================
-// FORMULARIO (usando camelCase como el backend)
-// ============================================================
 const formMateria = ref({
   nombre: '',
   abreviatura: '',
@@ -235,9 +220,6 @@ const formMateria = ref({
   duracionBloqueHorasMax: 2
 })
 
-// ============================================================
-// COMPUTADAS
-// ============================================================
 const totalPages = computed(() => Math.ceil(materias.value.length / itemsPerPage))
 const indexOfLastMateria = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirstMateria = computed(() => indexOfLastMateria.value - itemsPerPage)
@@ -245,9 +227,6 @@ const currentMaterias = computed(() =>
   materias.value.slice(indexOfFirstMateria.value, indexOfLastMateria.value)
 )
 
-// ============================================================
-// MÉTODOS
-// ============================================================
 const handlePageChange = (pageNumber) => {
   currentPage.value = pageNumber
 }
@@ -258,16 +237,11 @@ const obtenerNombreDivision = (divisionId) => {
   return division ? division.nombre : '-'
 }
 
-// ============================================================
-// CRUD - OBTENER MATERIAS
-// ============================================================
 const obtenerMaterias = async () => {
   cargando.value = true
   try {
     const res = await axios.get(API_URL)
-    // ✅ Los datos del backend ya vienen en camelCase
     materias.value = res.data
-    console.log('Materias cargadas:', materias.value)
   } catch (error) {
     console.error('Error al obtener materias:', error)
     await Swal.fire({
@@ -285,17 +259,12 @@ const obtenerMaterias = async () => {
   }
 }
 
-// ============================================================
-// CRUD - OBTENER DIVISIONES
-// ============================================================
 const obtenerDivisiones = async () => {
   try {
     const res = await axios.get(API_DIVISIONES)
     divisiones.value = res.data
-    console.log('Divisiones cargadas:', divisiones.value)
   } catch (error) {
     console.error('Error al obtener divisiones:', error)
-    // Si no hay servicio de divisiones, usa datos mock
     divisiones.value = [
       { id: 1, nombre: 'División 1' },
       { id: 2, nombre: 'División 2' },
@@ -314,9 +283,6 @@ const obtenerDivisiones = async () => {
   }
 }
 
-// ============================================================
-// CRUD - ABRIR FORMULARIO
-// ============================================================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   materiaEditando.value = null
@@ -333,9 +299,6 @@ const abrirFormularioNuevo = () => {
   mostrarFormulario.value = true
 }
 
-// ============================================================
-// CRUD - EDITAR MATERIA
-// ============================================================
 const editarMateria = (materia) => {
   modoEdicion.value = true
   materiaEditando.value = materia.id
@@ -352,60 +315,14 @@ const editarMateria = (materia) => {
   mostrarFormulario.value = true
 }
 
-// ============================================================
-// CRUD - GUARDAR MATERIA
-// ============================================================
 const guardarMateria = async () => {
-  // Validaciones
-  if (!formMateria.value.nombre.trim()) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'El nombre de la materia es obligatorio',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formMateria.value.tipo) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'Debes seleccionar un tipo',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
-  if (!formMateria.value.divisionId) {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'Campo requerido',
-      text: 'Debes seleccionar una división',
-      confirmButtonColor: '#3ABEF9',
-      background: '#ffffff',
-      color: '#213547',
-      iconColor: '#F59E0B',
-      width: '450px',
-    })
-    return
-  }
-
   cargandoAccion.value = true
   try {
-    // ✅ Envía camelCase directamente al backend
     const payload = { ...formMateria.value }
 
     if (modoEdicion.value) {
       await axios.put(`${API_URL}/${materiaEditando.value}`, payload)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: '¡Actualizado!',
@@ -419,6 +336,7 @@ const guardarMateria = async () => {
       })
     } else {
       await axios.post(API_URL, payload)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: '¡Agregado!',
@@ -434,6 +352,7 @@ const guardarMateria = async () => {
     cerrarFormulario()
     await obtenerMaterias()
   } catch (error) {
+    cargandoAccion.value = false
     console.error('Error al guardar materia:', error)
     await Swal.fire({
       icon: 'error',
@@ -450,9 +369,6 @@ const guardarMateria = async () => {
   }
 }
 
-// ============================================================
-// CRUD - ELIMINAR MATERIA
-// ============================================================
 const eliminarMateria = async (id) => {
   const confirm = await Swal.fire({
     title: '¿Eliminar materia?',
@@ -473,6 +389,7 @@ const eliminarMateria = async (id) => {
     cargandoAccion.value = true
     try {
       await axios.delete(`${API_URL}/${id}`)
+      cargandoAccion.value = false
       await Swal.fire({
         icon: 'success',
         title: 'Eliminado',
@@ -485,11 +402,11 @@ const eliminarMateria = async (id) => {
         width: '450px',
       })
       await obtenerMaterias()
-      // Si la página actual queda vacía, retrocede
       if (currentMaterias.value.length === 0 && currentPage.value > 1) {
         currentPage.value--
       }
     } catch (error) {
+      cargandoAccion.value = false
       console.error('Error al eliminar materia:', error)
       await Swal.fire({
         icon: 'error',
@@ -507,18 +424,12 @@ const eliminarMateria = async (id) => {
   }
 }
 
-// ============================================================
-// CRUD - CERRAR FORMULARIO
-// ============================================================
 const cerrarFormulario = () => {
   mostrarFormulario.value = false
   modoEdicion.value = false
   materiaEditando.value = null
 }
 
-// ============================================================
-// CICLO DE VIDA
-// ============================================================
 onMounted(() => {
   obtenerMaterias()
   obtenerDivisiones()
@@ -526,17 +437,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* =======================
-   LISTA DE MATERIAS - CON BOTÓN REGRESAR
-======================= */
-
 .materias-main {
   max-width: 1400px;
   margin: 40px auto;
   padding: 0 20px;
 }
 
-/* Header con botón a la izquierda y título centrado */
 .materias-header {
   display: flex;
   align-items: center;
@@ -598,7 +504,6 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* Tarjeta blanca */
 .materias-card {
   background: white;
   border-radius: 20px;
@@ -607,7 +512,6 @@ onMounted(() => {
   border: 1px solid #f0f0f0;
 }
 
-/* Tabla */
 .table-container {
   width: 100%;
   overflow-x: auto;
@@ -642,7 +546,6 @@ onMounted(() => {
   border: 1px solid #e2e8f0;
 }
 
-/* Botones de acción */
 .btn-accion {
   width: auto;
   padding: 6px 12px;
@@ -650,7 +553,6 @@ onMounted(() => {
   font-size: 0.75rem;
 }
 
-/* Paginación */
 .pagination {
   display: flex;
   justify-content: center;
@@ -680,7 +582,6 @@ onMounted(() => {
   color: white;
 }
 
-/* Botón agregar */
 .btn-div {
   display: flex;
   justify-content: center;
@@ -691,9 +592,66 @@ onMounted(() => {
   margin-right: 8px;
 }
 
-/* =======================
-   MODAL (ESTILO PERFIL)
-======================= */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
+}
+
 .form-overlay {
   position: fixed;
   top: 0;
@@ -816,173 +774,30 @@ onMounted(() => {
   background: #f1f5f9;
 }
 
-/* =======================
-   LOADING
-======================= */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #3abef9;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.action-loading {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-/* =======================
-   EMPTY STATE
-======================= */
-.empty-state {
-  background: white;
-  border-radius: 20px;
-  padding: 60px 20px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-}
-
-.empty-content i {
-  font-size: 4rem;
-  color: #cbd5e1;
-  margin-bottom: 20px;
-}
-
-.empty-content h3 {
-  color: #334155;
-  margin-bottom: 10px;
-}
-
-.empty-content p {
-  color: #94a3b8;
-}
-
-/* =======================
-   RESPONSIVE
-======================= */
 @media (max-width: 768px) {
-  .materias-main {
-    padding: 0 15px;
-  }
-  
-  .materias-card {
-    padding: 20px;
-  }
-  
-  .form-grid-layout {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .styled-table th,
-  .styled-table td {
-    padding: 10px 8px;
-    font-size: 0.75rem;
-  }
-  
-  .btn-accion {
-    margin: 2px;
-    font-size: 0.7rem;
-    padding: 4px 8px;
-  }
+  .materias-main { padding: 0 15px; }
+  .materias-card { padding: 20px; }
+  .form-grid-layout { grid-template-columns: 1fr; gap: 12px; }
+  .styled-table th, .styled-table td { padding: 10px 8px; font-size: 0.75rem; }
+  .btn-accion { margin: 2px; font-size: 0.7rem; padding: 4px 8px; }
 }
 
 @media (max-width: 600px) {
-  .materias-header {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-  
-  .header-spacer {
-    display: none;
-  }
-  
-  .btn-back-icon {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-  
-  .header-text {
-    flex: none;
-    width: 100%;
-    margin-top: 10px;
-  }
-  
-  .header-text h1 {
-    font-size: 1.5rem;
-  }
+  .materias-header { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .header-spacer { display: none; }
+  .btn-back-icon { position: absolute; left: 0; top: 0; }
+  .header-text { flex: none; width: 100%; margin-top: 10px; }
+  .header-text h1 { font-size: 1.5rem; }
 }
 
 @media (max-width: 480px) {
-  .styled-table thead {
-    display: none;
-  }
-  
-  .styled-table tbody tr {
-    display: block;
-    margin-bottom: 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 10px;
-  }
-  
-  .styled-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 10px;
-    border-bottom: 1px solid #e2e8f0;
-    text-align: right;
-  }
-  
-  .styled-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #334155;
-    text-align: left;
-  }
-  
-  .styled-table td:last-child {
-    border-bottom: none;
-  }
-  
-  .btn-accion {
-    width: auto;
-  }
-  
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-  
-  .modal-footer button {
-    width: 100%;
-  }
+  .styled-table thead { display: none; }
+  .styled-table tbody tr { display: block; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; }
+  .styled-table td { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  .styled-table td::before { content: attr(data-label); font-weight: 600; color: #334155; text-align: left; }
+  .styled-table td:last-child { border-bottom: none; }
+  .btn-accion { width: auto; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer button { width: 100%; }
 }
 </style>
