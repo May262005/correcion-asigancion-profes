@@ -157,7 +157,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from '../../utils/axios-config'
+import axios from 'axios'
 import '../../assets/styles.css'
 import Swal from 'sweetalert2'
 

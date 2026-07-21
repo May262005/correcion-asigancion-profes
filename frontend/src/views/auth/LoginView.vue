@@ -363,4 +363,4 @@ const login = async () => {
     transform: scale(1);
   }
 }
-</style>, haber intenten con este este ya me funcionaba
+</style>

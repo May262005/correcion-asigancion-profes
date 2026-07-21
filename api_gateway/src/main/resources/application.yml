@@ -15,8 +15,18 @@ spring:
             - id: user-service
               uri: lb://M2-USER-SERVICE
               predicates:
-                - Path=/api/usuario/**, /api/profesores/**, /api/estudiantes/**
-
+                - Path=/api/usuario/**
+                
+            - id: profesor-service
+              uri: lb://M2-USER-SERVICE
+              predicates:
+                - Path=/api/profesores/**
+                
+            - id: estudiante-service
+              uri: lb://M2-USER-SERVICE
+              predicates:
+                - Path=/api/estudiantes/**
+                
             - id: profile-service
               uri: lb://m3-profile-service
               predicates:
