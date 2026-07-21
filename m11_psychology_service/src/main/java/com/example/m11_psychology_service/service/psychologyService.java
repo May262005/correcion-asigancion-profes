@@ -1,5 +1,7 @@
 package com.example.m11_psychology_service.service;
 
+import com.example.m11_psychology_service.client.UserServiceClient;
+import com.example.m11_psychology_service.client.UserSummaryDto;
 import com.example.m11_psychology_service.dto.CitaPsicologicaDto;
 import com.example.m11_psychology_service.entity.CitaPsicologicaEntity;
 import com.example.m11_psychology_service.entity.CitaPsicologicaEntity.EstadoCita;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 public class psychologyService {
 
     private final CitaPsicologicaRepository citaRepository;
+    private final UserServiceClient userServiceClient;
 
     public CitaPsicologicaDto createCita(CitaPsicologicaDto dto) {
         CitaPsicologicaEntity entity = CitaPsicologicaEntity.builder()
@@ -60,10 +63,29 @@ public class psychologyService {
     }
 
     private CitaPsicologicaDto toDto(CitaPsicologicaEntity e) {
+        String nombreEstudiante = null;
+        String nombreProfesor = null;
+
+        try {
+            UserSummaryDto estudiante = userServiceClient.getEstudianteById(e.getIdEstudiante());
+            nombreEstudiante = estudiante != null ? estudiante.getNombreCompleto() : null;
+        } catch (Exception ex) {
+            nombreEstudiante = null;
+        }
+
+        try {
+            UserSummaryDto profesor = userServiceClient.getProfesorById(e.getIdProfesor());
+            nombreProfesor = profesor != null ? profesor.getNombreCompleto() : null;
+        } catch (Exception ex) {
+            nombreProfesor = null;
+        }
+
         return CitaPsicologicaDto.builder()
                 .id(e.getId())
                 .idEstudiante(e.getIdEstudiante())
                 .idProfesor(e.getIdProfesor())
+                .nombreEstudiante(nombreEstudiante)
+                .nombreProfesor(nombreProfesor)
                 .fechaCita(e.getFechaCita())
                 .horaCita(e.getHoraCita())
                 .motivoConsulta(e.getMotivoConsulta())

@@ -75,9 +75,7 @@ spring:
             - id: gene-service
               uri: lb://GENE-SERVICE
               predicates:
-            - Path=/api/gene/**
-          filters:
-            - StripPrefix=2
+                - Path=/api/gene/**
 
             - id: turno-service
               uri: lb://m10-turno-service
