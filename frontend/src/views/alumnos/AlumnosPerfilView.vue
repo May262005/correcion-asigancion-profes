@@ -38,10 +38,31 @@
       </div>
 
       <div v-else-if="datos.usuario" class="perfil-card">
+        <!-- AVATAR SECTION -->
         <div class="avatar-section">
-          <div class="perfil-avatar">
-            <span class="avatar-text">{{ obtenerIniciales(datos.usuario) }}</span>
+          <div class="perfil-avatar" @click="mostrarSelectorAvatar = true">
+            <img v-if="avatarActual" :src="avatarActual.imagen" :alt="avatarActual.nombre" class="avatar-img" />
+            <span v-else class="avatar-text">{{ obtenerIniciales(datos.usuario) }}</span>
+            <div class="avatar-overlay">Cambiar</div>
           </div>
+
+          <div v-if="mostrarSelectorAvatar" class="avatar-modal-overlay" @click.self="mostrarSelectorAvatar = false">
+            <div class="avatar-modal">
+              <h3>Elige tu avatar</h3>
+              <div class="avatar-grid">
+                <img
+                  v-for="av in catalogoAvatares"
+                  :key="av.id"
+                  :src="av.imagen"
+                  :alt="av.nombre"
+                  :class="['avatar-option', { seleccionado: avatarActual?.id === av.id }]"
+                  @click="seleccionarAvatar(av)"
+                />
+              </div>
+              <button @click="mostrarSelectorAvatar = false" class="btn-cerrar">Cerrar</button>
+            </div>
+          </div>
+
           <h2 class="user-full-name">
             {{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }}
           </h2>
@@ -174,12 +195,50 @@ import axios from "@/utils/axios-config"
 import Swal from "sweetalert2"
 
 const router = useRouter()
-const id = localStorage.getItem("id")
+const rawId = localStorage.getItem("id") || ""
+const id = rawId.replace(/[^0-9]/g, "")
+
 const datos = ref({ usuario: null, extra: null })
 const cargando = ref(true)
 const cargandoAccion = ref(false)
 const mostrarFormulario = ref(false)
 const guardando = ref(false)
+
+// Estados para el selector de avatar
+const mostrarSelectorAvatar = ref(false)
+const catalogoAvatares = ref([])
+const avatarActual = ref(null)
+
+const cargarCatalogoAvatares = async () => {
+  try {
+    const res = await axios.get('/api/v1/profiles/avatares')
+    catalogoAvatares.value = res.data
+
+    const idAvatar = datos.value.usuario?.idAvatar || datos.value.usuario?.avatar?.id
+    if (idAvatar) {
+      avatarActual.value = catalogoAvatares.value.find(a => a.id === idAvatar) || null
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar el catálogo de avatares', e)
+  }
+}
+
+const seleccionarAvatar = async (avatar) => {
+  try {
+    await axios.patch(`/api/v1/profiles/${id}/avatar/${avatar.id}`)
+    avatarActual.value = avatar
+    if (datos.value.usuario) {
+      datos.value.usuario.idAvatar = avatar.id
+    }
+    const res = await axios.get(`/api/usuario/perfil/${id}`)
+    datos.value = res.data
+    mostrarSelectorAvatar.value = false
+    Swal.fire({ icon: 'success', title: 'Avatar actualizado', showConfirmButton: false, timer: 1200 })
+  } catch (e) {
+    console.error('Error al cambiar avatar:', e)
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar el avatar en el servidor' })
+  }
+}
 
 const goBack = () => {
   router.push('/alumno')
@@ -212,6 +271,7 @@ onMounted(async () => {
   try {
     const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
+    await cargarCatalogoAvatares()
   } catch (e) {
     console.error('Error al cargar perfil:', e)
     await Swal.fire({
@@ -405,12 +465,89 @@ const cancelarEdicion = () => {
   align-items: center;
   margin-bottom: 15px;
   box-shadow: 0 5px 15px rgba(58, 190, 249, 0.4);
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .avatar-text {
   font-size: 2.2rem;
   color: white;
   font-weight: bold;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.perfil-avatar:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.avatar-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.avatar-option {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  object-fit: cover;
+}
+
+.avatar-option.seleccionado {
+  border-color: #3abef9;
+}
+
+.btn-cerrar {
+  background: #e2e8f0;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #475569;
 }
 
 .user-full-name {

@@ -37,7 +37,7 @@
               <select v-model="form.id_profesor" required>
                 <option value="" disabled>Selecciona un psicólogo(a)</option>
                 <option v-for="psi in psicologos" :key="psi.id" :value="psi.id">
-                  {{ psi.titulo }} {{ psi.usuario?.nombre }} {{ psi.usuario?.apellido_paterno }}
+                  {{ psi.nombre_mostrar }}
                 </option>
               </select>
             </div>
@@ -106,7 +106,7 @@
                 <tr v-for="cita in historialCitas" :key="cita.id">
                   <td data-label="Psicólogo(a)">
                     <div class="date-cell">
-                      <span>Psicólogo #{{ cita.idProfesor }}</span>
+                      <span>{{ obtenerNombrePsicologo(cita.idProfesor) }}</span>
                     </div>
                   </td>
                   <td data-label="Fecha / Hora">
@@ -196,6 +196,11 @@ const getEstadoTexto = (estado) => {
   return estados[estado.toLowerCase()] || estado
 }
 
+const obtenerNombrePsicologo = (idProfesor) => {
+  const psi = psicologos.value.find(p => Number(p.id) === Number(idProfesor))
+  return psi?.nombre_mostrar || `Psicólogo #${idProfesor}`
+}
+
 const resetForm = () => {
   form.value = {
     id_profesor: '',
@@ -208,7 +213,10 @@ const resetForm = () => {
 const cargarPsicologos = async () => {
   try {
     const res = await axios.get('/api/profesores/psicologos')
-    psicologos.value = res.data
+    psicologos.value = res.data.map(p => ({
+      id: p.id,
+      nombre_mostrar: p.nombreCompleto || 'Psicólogo'
+    }))
     console.log('✅ Psicólogos cargados:', psicologos.value.length)
   } catch (error) {
     console.error("❌ Error cargando psicólogos", error)

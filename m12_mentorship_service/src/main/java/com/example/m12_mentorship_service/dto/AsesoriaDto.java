@@ -15,6 +15,8 @@ public class AsesoriaDto {
     private Long id;
     private Long idEstudiante;
     private Long idProfesor;
+    private String nombreEstudiante;
+    private String nombreProfesor;
     private Long idAsignatura;
     private LocalDate fechaAsesoria;
     private LocalTime horaAsesoria;

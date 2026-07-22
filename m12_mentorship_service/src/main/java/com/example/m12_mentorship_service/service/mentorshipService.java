@@ -1,5 +1,7 @@
 package com.example.m12_mentorship_service.service;
 
+import com.example.m12_mentorship_service.client.UserServiceClient;
+import com.example.m12_mentorship_service.client.UserSummaryDto;
 import com.example.m12_mentorship_service.dto.AsesoriaDto;
 import com.example.m12_mentorship_service.entity.AsesoriaEntity;
 import com.example.m12_mentorship_service.entity.AsesoriaEntity.EstadoAsesoria;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class mentorshipService {
 
     private final AsesoriaRepository asesoriaRepository;
+    private final UserServiceClient userServiceClient;
 
     public AsesoriaDto createAsesoria(AsesoriaDto dto) {
         AsesoriaEntity entity = AsesoriaEntity.builder()
@@ -80,10 +83,29 @@ public class mentorshipService {
     }
 
     private AsesoriaDto toDto(AsesoriaEntity e) {
+        String nombreEstudiante = null;
+        String nombreProfesor = null;
+
+        try {
+            UserSummaryDto estudiante = userServiceClient.getEstudianteById(e.getIdEstudiante());
+            nombreEstudiante = estudiante != null ? estudiante.getNombreCompleto() : null;
+        } catch (Exception ex) {
+            nombreEstudiante = null;
+        }
+
+        try {
+            UserSummaryDto profesor = userServiceClient.getProfesorById(e.getIdProfesor());
+            nombreProfesor = profesor != null ? profesor.getNombreCompleto() : null;
+        } catch (Exception ex) {
+            nombreProfesor = null;
+        }
+
         return AsesoriaDto.builder()
                 .id(e.getId())
                 .idEstudiante(e.getIdEstudiante())
                 .idProfesor(e.getIdProfesor())
+                .nombreEstudiante(nombreEstudiante)
+                .nombreProfesor(nombreProfesor)
                 .idAsignatura(e.getIdAsignatura())
                 .fechaAsesoria(e.getFechaAsesoria())
                 .horaAsesoria(e.getHoraAsesoria())

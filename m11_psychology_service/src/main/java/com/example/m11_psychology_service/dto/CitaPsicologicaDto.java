@@ -15,6 +15,8 @@ public class CitaPsicologicaDto {
     private Long id;
     private Long idEstudiante;
     private Long idProfesor;
+    private String nombreEstudiante;
+    private String nombreProfesor;
     private LocalDate fechaCita;
     private LocalTime horaCita;
     private String motivoConsulta;

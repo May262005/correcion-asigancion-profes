@@ -182,21 +182,28 @@ const formatearHora = (fechaISO) => {
 }
 
 const obtenerNombreCompleto = (cita) => {
-  if (cita.estudiante?.usuario) {
-    const { nombre, apellido_paterno, apellido_materno } = cita.estudiante.usuario
-    const partes = [nombre, apellido_paterno, apellido_materno].filter(p => p && p.trim())
-    return partes.length > 0 ? partes.join(' ') : 'Nombre no disponible'
-  }
-  return 'Nombre no disponible'
+  const estudiante = estudiantes.value.find(e => Number(e.id) === Number(cita.idEstudiante))
+  return estudiante?.nombreCompleto || `Alumno #${cita.idEstudiante}`
 }
 
 const obtenerInicialNombre = (cita) => {
   const nombreCompleto = obtenerNombreCompleto(cita)
-  return nombreCompleto !== 'Nombre no disponible' ? nombreCompleto.charAt(0).toUpperCase() : '?'
+  return nombreCompleto.startsWith('Alumno #') ? '#' : nombreCompleto.charAt(0).toUpperCase()
 }
 
 const citas = ref([])
+const estudiantes = ref([])
 const cargando = ref(false)
+
+const cargarEstudiantes = async () => {
+  try {
+    const res = await axios.get('/api/estudiantes')
+    estudiantes.value = Array.isArray(res.data) ? res.data : []
+  } catch (error) {
+    console.error('❌ Error al cargar estudiantes:', error)
+    estudiantes.value = []
+  }
+}
 
 // Cargar citas del profesor
 const cargarCitas = async () => {
@@ -306,9 +313,12 @@ const eliminarCita = async (id) => {
 }
 
 // Cargar citas al montar el componente
-onMounted(() => {
+onMounted(async () => {
   console.log('🚀 Componente de Agenda Psicológica montado')
-  cargarCitas()
+  await Promise.all([
+    cargarEstudiantes(),
+    cargarCitas()
+  ])
 })
 </script>
 

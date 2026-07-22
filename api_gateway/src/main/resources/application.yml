@@ -73,11 +73,9 @@ spring:
                 - Path=/api/mentorship/**
 
             - id: gene-service
-              uri: lb://GENE-SERVICE
+              uri: http://gene-service:8000
               predicates:
                 - Path=/api/gene/**
-              filters:
-                - StripPrefix=1
 
             - id: turno-service
               uri: lb://m10-turno-service
