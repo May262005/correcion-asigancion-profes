@@ -12,6 +12,7 @@ public class UsuarioDTOs {
         private String apellidoMaterno;
         private String correoElectronico;
         private String rol;
+        private Integer idAvatar;
     }
 
     @Data
@@ -23,6 +24,7 @@ public class UsuarioDTOs {
         private String correoElectronico;
         @Size(min = 6)
         private String password;
+        private Integer idAvatar;
     }
 
     @Data

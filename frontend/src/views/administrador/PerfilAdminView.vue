@@ -5,9 +5,11 @@
         <router-link to="/dashboard" class="nav-figure">
           <img src="../../imagenes/logo.png" class="nav-logo" alt="Logo Cronos" />
         </router-link>
+
         <label class="nav-toggle" for="menu-input">
           <input type="checkbox" id="menu-input" class="nav-input" />
         </label>
+
         <ul class="nav-list">
           <li class="nav-item"><router-link to="/dashboard" class="nav-link">Panel de control</router-link></li>
           <li class="nav-item"><router-link :to="{ name: 'perfil-admin' }" class="nav-link">Perfil</router-link></li>
@@ -21,6 +23,7 @@
     </div>
 
     <main class="perfil-main">
+      <!-- HEADER CON BOTÓN REGRESAR -->
       <div class="perfil-header">
         <button @click="goBack" class="btn-back-icon" title="Volver al Dashboard">
           <i class="fas fa-arrow-left"></i>
@@ -39,9 +42,30 @@
 
       <div v-else-if="datos.usuario" class="perfil-card">
         <div class="avatar-section">
-          <div class="perfil-avatar">
-            <span class="avatar-text">{{ obtenerIniciales(datos.usuario) }}</span>
+          <div class="perfil-avatar" @click="mostrarSelectorAvatar = true">
+            <img v-if="avatarActual" :src="avatarActual.imagen" :alt="avatarActual.nombre" class="avatar-img" />
+            <span v-else class="avatar-text">{{ obtenerIniciales(datos.usuario) }}</span>
+            <div class="avatar-overlay">Cambiar</div>
           </div>
+
+          <!-- Modal selector -->
+          <div v-if="mostrarSelectorAvatar" class="avatar-modal-overlay" @click.self="mostrarSelectorAvatar = false">
+            <div class="avatar-modal">
+              <h3>Elige tu avatar</h3>
+              <div class="avatar-grid">
+                <img
+                  v-for="av in catalogoAvatares"
+                  :key="av.id"
+                  :src="av.imagen"
+                  :alt="av.nombre"
+                  :class="['avatar-option', { seleccionado: avatarActual?.id === av.id }]"
+                  @click="seleccionarAvatar(av)"
+                />
+              </div>
+              <button @click="mostrarSelectorAvatar = false" class="btn-cerrar">Cerrar</button>
+            </div>
+          </div>
+
           <h2 class="user-full-name">
             {{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }}
           </h2>
@@ -63,7 +87,7 @@
             <div class="info-icon"><i class="fas fa-lock"></i></div>
             <div class="info-details">
               <span class="info-label">Contraseña</span>
-              <span class="info-value">********</span>
+              <span class="info-value">{{ datos.usuario.passwordVisible || '********' }}</span>
             </div>
           </div>
 
@@ -71,7 +95,7 @@
             <div class="info-icon"><i class="fas fa-user"></i></div>
             <div class="info-details">
               <span class="info-label">Nombre Completo</span>
-              <span class="info-value">{{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }} {{ datos.usuario.apellidoMaterno || '' }}</span>
+              <span class="info-value">{{ datos.usuario.nombre }} {{ datos.usuario.apellidoPaterno }} {{ datos.usuario.apellidoMaterno }}</span>
             </div>
           </div>
         </div>
@@ -95,6 +119,7 @@
       </div>
     </main>
 
+    <!-- MODAL EDITAR PERFIL -->
     <Transition name="fade">
       <div v-if="mostrarFormulario" class="form-overlay" @click.self="cancelarEdicion">
         <div class="form-modal">
@@ -112,17 +137,17 @@
 
               <div class="input-group">
                 <label>Apellido Paterno</label>
-                <input v-model="formData.apellidoPaterno" type="text" :class="{ error: errors.apellidoPaterno }" />
+                <input v-model="formData.apellido_paterno" type="text" :class="{ error: errors.apellido_paterno }" />
               </div>
 
               <div class="input-group">
                 <label>Apellido Materno</label>
-                <input v-model="formData.apellidoMaterno" type="text" />
+                <input v-model="formData.apellido_materno" type="text" />
               </div>
 
               <div class="input-group">
                 <label>Correo Institucional</label>
-                <input v-model="formData.correoElectronico" type="email" :class="{ error: errors.correoElectronico }" />
+                <input v-model="formData.correo_electronico" type="email" :class="{ error: errors.correo_electronico }" />
               </div>
 
               <div class="input-group full-width">
@@ -156,12 +181,18 @@ import axios from "@/utils/axios-config"
 import Swal from "sweetalert2"
 
 const router = useRouter()
-const id = localStorage.getItem("id")
+const rawId = localStorage.getItem("id") || ""
+const id = rawId.replace(/[^0-9]/g, "")
 const datos = ref({ usuario: null })
 const cargando = ref(true)
 const cargandoAccion = ref(false)
 const mostrarFormulario = ref(false)
 const guardando = ref(false)
+
+// Estados para el selector de avatar
+const mostrarSelectorAvatar = ref(false)
+const catalogoAvatares = ref([])
+const avatarActual = ref(null)
 
 const goBack = () => {
   router.back()
@@ -169,17 +200,17 @@ const goBack = () => {
 
 const formData = ref({
   nombre: '',
-  apellidoPaterno: '',
-  apellidoMaterno: '',
-  correoElectronico: '',
+  apellido_paterno: '',
+  apellido_materno: '',
+  correo_electronico: '',
   password: '',
   confirmarPassword: ''
 })
 
 const errors = ref({
   nombre: false,
-  apellidoPaterno: false,
-  correoElectronico: false,
+  apellido_paterno: false,
+  correo_electronico: false,
   confirmarPassword: false
 })
 
@@ -190,12 +221,52 @@ const obtenerIniciales = (usuario) => {
   return (n + a).toUpperCase()
 }
 
+// Carga el catálogo y detecta automáticamente el avatar activo
+const cargarCatalogoAvatares = async () => {
+  try {
+    const res = await axios.get('/api/v1/profiles/avatares')
+    catalogoAvatares.value = res.data
+
+    // Detectar idAvatar independientemente de la estructura enviada por el microservicio
+    const idAvatar = datos.value.usuario?.idAvatar || datos.value.usuario?.avatar?.id
+    if (idAvatar) {
+      avatarActual.value = catalogoAvatares.value.find(a => a.id === idAvatar) || null
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar el catálogo de avatares', e)
+  }
+}
+
+const seleccionarAvatar = async (avatar) => {
+  try {
+    // 1. Enviar el cambio al backend
+    await axios.patch(`/api/v1/profiles/${id}/avatar/${avatar.id}`)
+    
+    // 2. Actualizar estado local inmediato
+    avatarActual.value = avatar
+    if (datos.value.usuario) {
+      datos.value.usuario.idAvatar = avatar.id
+    }
+
+    // 3. Re-consultar perfil para garantizar consistencia con M2
+    const res = await axios.get(`/api/usuario/perfil/${id}`)
+    datos.value = res.data
+
+    mostrarSelectorAvatar.value = false
+    Swal.fire({ icon: 'success', title: 'Avatar actualizado', showConfirmButton: false, timer: 1200 })
+  } catch (e) {
+    console.error('Error al cambiar avatar:', e)
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo guardar el avatar en el servidor' })
+  }
+}
+
 onMounted(async () => {
   try {
     const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
+    await cargarCatalogoAvatares()
   } catch (e) {
-    await Swal.fire({
+    Swal.fire({
       icon: 'error',
       title: 'Error',
       text: 'No se pudo cargar el perfil',
@@ -225,31 +296,28 @@ const cerrarSesion = async () => {
 const editarPerfil = () => {
   formData.value = {
     nombre: datos.value.usuario?.nombre || '',
-    apellidoPaterno: datos.value.usuario?.apellidoPaterno || '',
-    apellidoMaterno: datos.value.usuario?.apellidoMaterno || '',
-    correoElectronico: datos.value.usuario?.correoElectronico || '',
+    apellido_paterno: datos.value.usuario?.apellidoPaterno || '',
+    apellido_materno: datos.value.usuario?.apellidoMaterno || '',
+    correo_electronico: datos.value.usuario?.correoElectronico || '',
     password: '',
     confirmarPassword: ''
   }
-  errors.value = { nombre: false, apellidoPaterno: false, correoElectronico: false, confirmarPassword: false }
+  errors.value = { nombre: false, apellido_paterno: false, correo_electronico: false, confirmarPassword: false }
   mostrarFormulario.value = true
 }
 
 const validarFormulario = () => {
   let valido = true
-  errors.value = { nombre: false, apellidoPaterno: false, correoElectronico: false, confirmarPassword: false }
+  errors.value = { nombre: false, apellido_paterno: false, correo_electronico: false, confirmarPassword: false }
 
   if (!formData.value.nombre.trim()) { errors.value.nombre = true; valido = false; }
-  if (!formData.value.apellidoPaterno.trim()) { errors.value.apellidoPaterno = true; valido = false; }
-  
+  if (!formData.value.apellido_paterno.trim()) { errors.value.apellido_paterno = true; valido = false; }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!formData.value.correoElectronico.trim() || !emailRegex.test(formData.value.correoElectronico)) {
-    errors.value.correoElectronico = true; valido = false;
+  if (!formData.value.correo_electronico.trim() || !emailRegex.test(formData.value.correo_electronico)) {
+    errors.value.correo_electronico = true; valido = false;
   }
-  
   if (formData.value.password && formData.value.password !== formData.value.confirmarPassword) {
     errors.value.confirmarPassword = true; valido = false;
-    Swal.fire({ icon: 'warning', title: 'Las contraseñas no coinciden' })
   }
   return valido
 }
@@ -261,9 +329,9 @@ const guardarCambios = async () => {
   try {
     const datosActualizar = {
       nombre: formData.value.nombre,
-      apellidoPaterno: formData.value.apellidoPaterno,
-      apellidoMaterno: formData.value.apellidoMaterno,
-      correoElectronico: formData.value.correoElectronico,
+      apellidoPaterno: formData.value.apellido_paterno,
+      apellidoMaterno: formData.value.apellido_materno,
+      correoElectronico: formData.value.correo_electronico,
     }
     if (formData.value.password) {
       datosActualizar.password = formData.value.password
@@ -273,25 +341,23 @@ const guardarCambios = async () => {
     const res = await axios.get(`/api/usuario/perfil/${id}`)
     datos.value = res.data
     mostrarFormulario.value = false
-    await Swal.fire({ icon: 'success', title: 'Perfil actualizado', showConfirmButton: false, timer: 1500 })
+    Swal.fire({ icon: 'success', title: 'Perfil actualizado', showConfirmButton: false, timer: 1500 })
   } catch (error) {
-    await Swal.fire({ 
-      icon: 'error', 
-      title: 'Error', 
-      text: error.response?.data?.message || 'No se pudo actualizar el perfil' 
-    })
+    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar' })
   } finally {
     guardando.value = false
     cargandoAccion.value = false
   }
 }
 
-const cancelarEdicion = () => { 
-  mostrarFormulario.value = false 
-}
+const cancelarEdicion = () => { mostrarFormulario.value = false }
 </script>
 
 <style scoped>
+/* =======================
+   PERFIL ADMIN - CON BOTÓN REGRESAR
+======================= */
+
 .perfil-main {
   max-width: 800px;
   margin: 40px auto;
@@ -385,12 +451,91 @@ const cancelarEdicion = () => {
   align-items: center;
   margin-bottom: 15px;
   box-shadow: 0 5px 15px rgba(58, 190, 249, 0.4);
+  position: relative;
+  cursor: pointer;
 }
 
 .avatar-text {
   font-size: 2.2rem;
   color: white;
   font-weight: bold;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.perfil-avatar:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.avatar-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.avatar-option {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  object-fit: cover;
+}
+
+.avatar-option.seleccionado {
+  border-color: #3abef9;
+}
+
+.btn-cerrar {
+  background: #e2e8f0;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #475569;
+}
+
+.btn-cerrar:hover {
+  background: #cbd5e1;
 }
 
 .user-full-name {
@@ -481,16 +626,6 @@ const cancelarEdicion = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: #29a9e0;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .btn-danger {
@@ -501,69 +636,13 @@ const cancelarEdicion = () => {
   border: none;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .btn-danger:hover {
   background: #fee2e2;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #3abef9;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.action-loading {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.empty-state {
-  background: white;
-  border-radius: 20px;
-  padding: 60px 20px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-}
-
-.empty-content i {
-  font-size: 4rem;
-  color: #cbd5e1;
-  margin-bottom: 20px;
-}
-
-.empty-content h3 {
-  color: #334155;
-  margin-bottom: 10px;
-}
-
-.empty-content p {
-  color: #94a3b8;
 }
 
 .form-overlay {
@@ -665,7 +744,7 @@ const cancelarEdicion = () => {
 .modal-footer {
   padding: 20px 25px;
   display: flex;
-  flex-direction: row-reverse;
+  justify-content: flex-end;
   gap: 10px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
@@ -685,11 +764,13 @@ const cancelarEdicion = () => {
   background: #f1f5f9;
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
