@@ -1,0 +1,133 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "ApiGatewayApplication",
+            "request": "launch",
+            "mainClass": "com.example.api_gateway.ApiGatewayApplication",
+            "projectName": "api-gateway"
+        },
+        {
+            "type": "java",
+            "name": "CurriculumServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.curriculum.m7_curriculum_service.CurriculumServiceApplication",
+            "projectName": "curriculum-service"
+        },
+        {
+            "type": "java",
+            "name": "EurekaServerApplication",
+            "request": "launch",
+            "mainClass": "com.example.eureka_service.EurekaServerApplication",
+            "projectName": "eureka_service"
+        },
+        {
+            "type": "java",
+            "name": "M10TurnoServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m10_turno_service.M10TurnoServiceApplication",
+            "projectName": "m10_turno_service"
+        },
+        {
+            "type": "java",
+            "name": "M11PsychologyServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m11_psychology_service.M11PsychologyServiceApplication",
+            "projectName": "m11_psychology_service"
+        },
+        {
+            "type": "java",
+            "name": "M13DivisionServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m13_division_service.M13DivisionServiceApplication",
+            "projectName": "m13-division-service"
+        },
+        {
+            "type": "java",
+            "name": "M14ProfesorAsignaturaServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m14_profesor_asignatura_service.M14ProfesorAsignaturaServiceApplication",
+            "projectName": "m14_profesor_asignatura_service"
+        },
+        {
+            "type": "java",
+            "name": "M15PeriodoServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m15_periodo_service.M15PeriodoServiceApplication",
+            "projectName": "m15_periodo_service"
+        },
+        {
+            "type": "java",
+            "name": "M1AuthServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m1_auth_service.M1AuthServiceApplication",
+            "projectName": "m1_auth_service"
+        },
+        {
+            "type": "java",
+            "name": "M12MentorshipServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m12_mentorship_service.M12MentorshipServiceApplication",
+            "projectName": "m1_mentorship_service"
+        },
+        {
+            "type": "java",
+            "name": "M2UserServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m2_user_service.M2UserServiceApplication",
+            "projectName": "m2_user_service"
+        },
+        {
+            "type": "java",
+            "name": "M3PrifileServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m3_prifile_service.M3PrifileServiceApplication",
+            "projectName": "m3_prifile_service"
+        },
+        {
+            "type": "java",
+            "name": "M4BuildingServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m4_building_service.M4BuildingServiceApplication",
+            "projectName": "m4_building_service"
+        },
+        {
+            "type": "java",
+            "name": "M5RoomServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m5_room_service.M5RoomServiceApplication",
+            "projectName": "m5_room-service"
+        },
+        {
+            "type": "java",
+            "name": "M8GroupServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.m8_group_service.M8GroupServiceApplication",
+            "projectName": "m8_group_service"
+        },
+        {
+            "type": "java",
+            "name": "ScheduleConfigServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.schedule.m9_schedule_service.ScheduleConfigServiceApplication",
+            "projectName": "schedule-config-service"
+        },
+        {
+            "type": "java",
+            "name": "TeacherServiceApplication",
+            "request": "launch",
+            "mainClass": "com.example.teacher.m6_teacher_service.TeacherServiceApplication",
+            "projectName": "teacher-service"
+        }
+    ]
+}

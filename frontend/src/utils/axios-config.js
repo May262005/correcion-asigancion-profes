@@ -19,7 +19,7 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
+      localStorage.removeItem('access_token')
       localStorage.removeItem('id_usuario')
       localStorage.removeItem('nombre')
       localStorage.removeItem('rol')
