@@ -184,7 +184,7 @@ import Swal from 'sweetalert2'
 
 const router = useRouter()
 const API_GRUPOS = `http://localhost:8080/api/v1/grupos`
-const API_DIVISIONES = `http://localhost:8080/api/divisiones`
+const API_DIVISIONES = `http://localhost:8080/divisiones`
 const API_TURNOS = `http://localhost:8080/api/turnos`
 const API_PROFESORES = `http://localhost:8080/api/profesores`
 

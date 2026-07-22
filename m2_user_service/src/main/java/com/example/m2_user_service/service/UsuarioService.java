@@ -39,7 +39,7 @@ public class UsuarioService {
         userDTO.setApellidoMaterno(usuario.getApellidoMaterno());
         userDTO.setCorreoElectronico(usuario.getCorreoElectronico());
         userDTO.setRol(usuario.getRol().name());
-        userDTO.setIdAvatar(usuario.IdAvatar());
+        userDTO.setIdAvatar(usuario.getIdAvatar());
         response.setUsuario(userDTO);
 
         // ======================================================
