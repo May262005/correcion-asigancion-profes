@@ -207,8 +207,8 @@ const error = ref(null);
 const horariosGenerados = ref(false);
 const horariosGruposData = ref([]);
 
-const PYTHON_API = `http://127.0.0.1:8000`;
-const NESTJS_API = `http://localhost:3000`;
+const PYTHON_API = `http://localhost:8080/api/gene`;
+const NESTJS_API = `http://localhost:8080`;
 
 const todosPublicados = computed(() => {
   if (!horariosGruposData.value.length) return false;

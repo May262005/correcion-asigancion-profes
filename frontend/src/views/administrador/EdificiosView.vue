@@ -406,7 +406,6 @@ const guardarEdificio = async () => {
     cargandoAccion.value = false
   }
 }
-
 // ============================================================
 // CRUD - ELIMINAR EDIFICIO
 // ============================================================
@@ -447,16 +446,34 @@ const eliminarEdificio = async (id) => {
       }
     } catch (error) {
       console.error('Error al eliminar edificio:', error)
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.message || 'No se pudo eliminar el edificio',
-        confirmButtonColor: '#3ABEF9',
-        background: '#ffffff',
-        color: '#213547',
-        iconColor: '#E54848',
-        width: '500px',
-      })
+      
+      // Capturamos el mensaje de error que viene del backend o de Axios
+      const mensajeError = error.response?.data?.message || error.message || ''
+
+      // Si el error detecta conflicto por llave foránea o relación con aulas/horarios
+      if (error.response?.status === 500 || mensajeError.includes('violates foreign key constraint') || mensajeError.includes('horario_clases')) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'No se puede eliminar',
+          text: 'No se puede eliminar el edificio porque contiene aulas asignadas a horarios activos.',
+          confirmButtonColor: '#3ABEF9',
+          background: '#ffffff',
+          color: '#213547',
+          iconColor: '#E54848',
+          width: '500px',
+        })
+      } else {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: mensajeError || 'No se pudo eliminar el edificio',
+          confirmButtonColor: '#3ABEF9',
+          background: '#ffffff',
+          color: '#213547',
+          iconColor: '#E54848',
+          width: '500px',
+        })
+      }
     } finally {
       cargandoAccion.value = false
     }

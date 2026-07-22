@@ -22,6 +22,9 @@ public class PeriodoEntity {
     @Column(name = "fecha_fin")
     private LocalDate fechaFin;
 
+    @Column(name = "privilegio_default", nullable = false)
+    private String privilegioDefault = "sin_privilegio";
+
     @Column(nullable = false)
     private Boolean activo = false;
 }

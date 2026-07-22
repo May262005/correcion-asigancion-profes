@@ -192,7 +192,7 @@ import '../../assets/styles.css'
 const router = useRouter()
 
 const API_URL = `http://localhost:8080/api/curriculum`
-const API_DIVISIONES = `http://localhost:8080/api/divisiones`
+const API_DIVISIONES = `http://localhost:8080/divisiones`
 
 const goBack = () => {
   router.back()
