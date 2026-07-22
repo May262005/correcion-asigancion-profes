@@ -181,7 +181,8 @@ import axios from "@/utils/axios-config"
 import Swal from "sweetalert2"
 
 const router = useRouter()
-const id = localStorage.getItem("id")
+const rawId = localStorage.getItem("id") || ""
+const id = rawId.replace(/[^0-9]/g, "")
 const datos = ref({ usuario: null })
 const cargando = ref(true)
 const cargandoAccion = ref(false)

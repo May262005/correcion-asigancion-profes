@@ -39,6 +39,7 @@ public class UsuarioService {
         userDTO.setApellidoMaterno(usuario.getApellidoMaterno());
         userDTO.setCorreoElectronico(usuario.getCorreoElectronico());
         userDTO.setRol(usuario.getRol().name());
+        userDTO.setIdAvatar(usuario.IdAvatar());
         response.setUsuario(userDTO);
 
         // ======================================================
@@ -138,6 +139,10 @@ public class UsuarioService {
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
             usuario.setContrasena(passwordEncoder.encode(dto.getPassword()));
         }
+        
+        if (dto.getIdAvatar() != null) {
+            usuario.setIdAvatar(dto.getIdAvatar());
+        }
 
         Usuario actualizado = usuarioRepository.save(usuario);
 
@@ -148,6 +153,7 @@ public class UsuarioService {
         response.setApellidoMaterno(actualizado.getApellidoMaterno());
         response.setCorreoElectronico(actualizado.getCorreoElectronico());
         response.setRol(actualizado.getRol().name());
+        response.setIdAvatar(actualizado.getIdAvatar());
 
         return response;
     }

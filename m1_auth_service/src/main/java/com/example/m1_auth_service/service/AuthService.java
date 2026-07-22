@@ -25,8 +25,9 @@ public class AuthService {
             throw new RuntimeException("Contraseña incorrecta");
         }
 
-        String token = jwtService.generateToken(usuario.getId(), usuario.getRol());
+        String token = jwtService.generateToken(usuario.getId(), usuario.getRol().name());
 
+        
         // ✅ OBTENER idRol desde User-Service
         Integer idRol = null;
         try {
@@ -41,7 +42,7 @@ public class AuthService {
         response.setIdRol(idRol);  // ✅ AHORA TIENE VALOR
         response.setNombre(usuario.getNombre());
         response.setCorreoElectronico(usuario.getCorreoElectronico());
-        response.setRol(usuario.getRol());
+        response.setRol(usuario.getRol().name());
         response.setToken(token);
         
         return response;
