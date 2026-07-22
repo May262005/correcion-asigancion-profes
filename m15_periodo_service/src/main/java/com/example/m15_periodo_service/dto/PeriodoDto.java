@@ -13,6 +13,7 @@ public class PeriodoDto {
 
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
+        private String privilegioDefault; 
         private Boolean activo;
     }
 
@@ -21,6 +22,7 @@ public class PeriodoDto {
         private String nombre;
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
+        private String privilegioDefault;
         private Boolean activo;
     }
 }

@@ -182,14 +182,14 @@ const goBack = () => {
   router.back()
 }
 
-// ✅ Rutas reales a través del Gateway
-const API_ASIGNACIONES = `/api/profesor-asignatura`
-const API_ASIGNACIONES_AULAS = `/api/profesor-aula`
-const API_PROFESORES = `/api/teachers`
-const API_ASIGNATURAS = `/api/curriculum`
-const API_PERIODOS = `/api/periodos`
-const API_GRUPOS = `/api/v1/grupos`
-const API_AULAS = `/aulas`
+
+const API_ASIGNACIONES = 'http://localhost:8080/api/profesor-asignatura'
+const API_ASIGNACIONES_AULAS = 'http://localhost:8080/api/profesor-aula'
+const API_PROFESORES = 'http://localhost:8080/api/teachers'
+const API_ASIGNATURAS = 'http://localhost:8080/api/curriculum'
+const API_PERIODOS = 'http://localhost:8080/api/periodos'
+const API_GRUPOS = 'http://localhost:8080/api/v1/grupos'
+const API_AULAS = 'http://localhost:8080/aulas' 
 
 const asignaciones = ref([])
 const profesores = ref([])

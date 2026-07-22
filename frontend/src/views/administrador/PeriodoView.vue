@@ -114,15 +114,15 @@
                 <input v-model="formPeriodo.nombre" type="text" placeholder="Nombre del período" required />
               </div>
 
-              <div class="input-group">
-                <label>Fecha de Inicio</label>
-                <input v-model="formPeriodo.fecha_inicio" type="date" required />
-              </div>
+                <div class="input-group">
+                    <label>Fecha de Inicio</label>
+                    <input v-model="formPeriodo.fechaInicio" type="date" required />
+                  </div>
 
-              <div class="input-group">
-                <label>Fecha de Fin</label>
-                <input v-model="formPeriodo.fecha_fin" type="date" required />
-              </div>
+                  <div class="input-group">
+                    <label>Fecha de Fin</label>
+                    <input v-model="formPeriodo.fechaFin" type="date" required />
+                  </div>
 
               <div class="input-group full-width">
                 <label>Estado</label>
@@ -165,8 +165,8 @@ const periodoEditando = ref(null)
 
 const formPeriodo = ref({
   nombre: '',
-  fecha_inicio: '',
-  fecha_fin: '',
+  fechaInicio: '', // Cambiado de fecha_inicio a fechaInicio
+  fechaFin: '',    // Cambiado de fecha_fin a fechaFin
   activo: true
 })
 
@@ -224,8 +224,8 @@ const editarPeriodo = (periodo) => {
   periodoEditando.value = periodo.id
   formPeriodo.value = {
     nombre: periodo.nombre,
-    fecha_inicio: periodo.fechaInicio,
-    fecha_fin: periodo.fechaFin,
+    fechaInicio: periodo.fechaInicio,
+    fechaFin: periodo.fechaFin,
     activo: periodo.activo
   }
   mostrarFormulario.value = true

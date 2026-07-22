@@ -75,9 +75,9 @@ spring:
             - id: gene-service
               uri: lb://GENE-SERVICE
               predicates:
-            - Path=/api/gene/**
-          filters:
-            - StripPrefix=2
+                - Path=/api/gene/**
+              filters:
+                - StripPrefix=1
 
             - id: turno-service
               uri: lb://m10-turno-service
@@ -104,23 +104,23 @@ spring:
               predicates:
                 - Path=/divisiones/**
           
-          globalcors:
-            cors-configurations:
-              '[/**]':
-                allowed-origins:
-                  - "http://localhost:5173"
-                  - "http://localhost:5174"
-                  - "http://localhost:3000"
-                allowed-methods:
-                  - GET
-                  - POST
-                  - PUT
-                  - PATCH
-                  - DELETE
-                  - OPTIONS
-                allowed-headers: "*"
-                allow-credentials: true
-                max-age: 3600
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "http://localhost:5173"
+              - "http://localhost:5174"
+              - "http://localhost:3000"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
 
 server:
   port: 8080

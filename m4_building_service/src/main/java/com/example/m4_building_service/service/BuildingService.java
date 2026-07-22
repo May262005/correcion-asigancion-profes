@@ -6,8 +6,11 @@ import com.example.m4_building_service.dto.BuildingDTOList;
 import com.example.m4_building_service.dto.DivisionDTO;
 import com.example.m4_building_service.entity.BuildingEntity;
 import com.example.m4_building_service.repository.BuildingRepo;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +67,7 @@ public class BuildingService {
             dto.setNombre(building.getNombre());
             dto.setAbreviatura(building.getAbreviatura());
             dto.setTipo(building.getTipo());
-            dto.setIdDivision(building.getIdDivision()); // <-- Asignación añadida correctamente
+            dto.setIdDivision(building.getIdDivision());
             dto.setNombreDivision(divisionNombreMap.getOrDefault(building.getIdDivision(), "Sin división"));
             return dto;
         }).collect(Collectors.toList());
@@ -103,7 +106,14 @@ public class BuildingService {
         if (!buildingRepo.existsById(id)) {
             throw new RuntimeException("Edificio no encontrado con ID: " + id);
         }
-        buildingRepo.deleteById(id);
+        try {
+            buildingRepo.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, 
+                "No se puede eliminar el edificio porque contiene aulas asignadas a horarios activos."
+            );
+        }
     }
 
     private BuildingDto toDto(BuildingEntity entity) {
