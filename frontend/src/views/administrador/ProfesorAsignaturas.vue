@@ -126,7 +126,7 @@
                 <select v-model="form.id_asignatura" required>
                   <option disabled value="">Selecciona una asignatura</option>
                   <option v-for="asig in asignaturas" :key="asig.id" :value="asig.id">
-                    {{ asig.nombre }}
+                    {{ asig.nombre }}<template v-if="obtenerNombreDivisionDeAsignatura(asig.id)"> - {{ obtenerNombreDivisionDeAsignatura(asig.id) }}</template>
                   </option>
                 </select>
               </div>
@@ -136,7 +136,7 @@
                 <select v-model="form.id_aula">
                   <option value="">Sin aula</option>
                   <option v-for="aula in aulas" :key="aula.id" :value="aula.id">
-                    {{ aula.nombre }}
+                    {{ aula.nombre }}<template v-if="obtenerNombreEdificioDeAula(aula.id)"> - {{ obtenerNombreEdificioDeAula(aula.id) }}</template>
                   </option>
                 </select>
               </div>
@@ -211,6 +211,8 @@ const asignaturas = ref([])
 const periodos = ref([])
 const grupos = ref([])
 const aulas = ref([])
+const edificios = ref([])   // 👈 NUEVO: catálogo completo de edificios
+const divisiones = ref([])  // 👈 NUEVO: catálogo completo de divisiones
 
 const usuariosCache = ref({})
 const profesoresMap = ref({})
@@ -301,7 +303,32 @@ const obtenerAula = (idAula) => {
   return aula || null
 }
 
-// ✅ Obtener división y edificio desde las relaciones
+// 👈 El aula ya trae el nombre del edificio directamente en "nombreEdificio"
+const obtenerNombreEdificioDeAula = (idAula) => {
+  if (!idAula) return null
+  const aulaIdNum = typeof idAula === 'string' ? parseInt(idAula) : idAula
+  const aula = aulas.value.find(a => a.id === aulaIdNum)
+  if (!aula) return null
+
+  return aula.nombreEdificio || null
+}
+
+// 👈 NUEVO: Obtener el nombre de la división a partir del id de una asignatura (para el <select> del formulario)
+// ⚠️ Asume que cada objeto "asignatura" trae el campo idDivision. Si tu API usa otro nombre
+//    (por ejemplo id_division o divisionId), ajusta la línea de abajo.
+const obtenerNombreDivisionDeAsignatura = (idAsignatura) => {
+  if (!idAsignatura) return null
+  const asig = asignaturas.value.find(a => a.id === idAsignatura)
+  if (!asig) return null
+
+  const idDivision = asig.idDivision ?? asig.id_division ?? asig.divisionId
+  if (!idDivision) return null
+
+  const division = divisiones.value.find(d => d.id === idDivision)
+  return division ? division.nombre : null
+}
+
+// ✅ Obtener división y edificio desde las relaciones (usado en la tabla, vía aula asignada)
 const obtenerDivisionYEdificio = async (idAula) => {
   if (!idAula) return { division: '-', edificio: '-' }
   
@@ -345,12 +372,14 @@ const obtenerDivisionYEdificio = async (idAula) => {
 // ==================== CARGAR DATOS ====================
 const cargarCatalogos = async () => {
   try {
-    const [profRes, asigRes, perRes, gruposRes, aulasRes] = await Promise.all([
+    const [profRes, asigRes, perRes, gruposRes, aulasRes, edificiosRes, divisionesRes] = await Promise.all([
       axios.get(API_PROFESORES),
       axios.get(API_ASIGNATURAS),
       axios.get(API_PERIODOS),
       axios.get(API_GRUPOS),
-      axios.get(API_AULAS)
+      axios.get(API_AULAS),
+      axios.get(API_EDIFICIOS),   // 👈 NUEVO
+      axios.get(API_DIVISIONES)   // 👈 NUEVO
     ])
     
     profesores.value = profRes.data
@@ -358,6 +387,8 @@ const cargarCatalogos = async () => {
     periodos.value = perRes.data
     grupos.value = gruposRes.data
     aulas.value = aulasRes.data
+    edificios.value = edificiosRes.data   // 👈 NUEVO
+    divisiones.value = divisionesRes.data // 👈 NUEVO
     
     // ✅ Precargar nombres de profesores en caché usando nombreCompleto del DTO
     for (const prof of profesores.value) {
