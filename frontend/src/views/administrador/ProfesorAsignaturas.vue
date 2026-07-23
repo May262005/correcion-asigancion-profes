@@ -73,8 +73,12 @@
           </table>
 
           <div class="pagination">
-            <button v-for="pageNumber in totalPages" :key="pageNumber" @click="currentPage = pageNumber"
-              :class="{ active: pageNumber === currentPage }">
+            <button 
+              v-for="pageNumber in totalPages" 
+              :key="pageNumber" 
+              @click="currentPage = pageNumber"
+              :class="{ active: pageNumber === currentPage }"
+            >
               {{ pageNumber }}
             </button>
           </div>
@@ -96,7 +100,7 @@
       </div>
     </main>
 
-    <!-- MODAL (ESTILO PERFIL) -->
+    <!-- MODAL -->
     <div v-if="mostrarFormulario" class="form-overlay" @click.self="cerrarFormulario">
       <div class="form-modal">
         <div class="modal-header">
@@ -112,7 +116,7 @@
                 <select v-model="form.id_profesor" required>
                   <option disabled value="">Selecciona un profesor</option>
                   <option v-for="prof in profesores" :key="prof.id" :value="prof.id">
-                    {{ prof.abreviaturaNombre }} - {{ prof.titulo }}
+                    {{ prof.nombreCompleto }} - {{ prof.titulo || 'Sin título' }}
                   </option>
                 </select>
               </div>
@@ -151,7 +155,12 @@
                 <label>Grupos (múltiples)</label>
                 <div class="checkbox-group">
                   <div v-for="grupo in grupos" :key="grupo.id" class="checkbox-item">
-                    <input type="checkbox" :id="'grupo-' + grupo.id" :value="grupo.id" v-model="form.id_grupos" />
+                    <input 
+                      type="checkbox" 
+                      :id="'grupo-' + grupo.id" 
+                      :value="grupo.id" 
+                      v-model="form.id_grupos" 
+                    />
                     <label :for="'grupo-' + grupo.id">{{ grupo.nombre }}</label>
                   </div>
                 </div>
@@ -182,15 +191,20 @@ const goBack = () => {
   router.back()
 }
 
-
+// ✅ URLs usando el API Gateway (puerto 8080)
 const API_ASIGNACIONES = 'http://localhost:8080/api/profesor-asignatura'
 const API_ASIGNACIONES_AULAS = 'http://localhost:8080/api/profesor-aula'
-const API_PROFESORES = 'http://localhost:8080/api/teachers'
+const API_PROFESORES = 'http://localhost:8080/api/profesores'
 const API_ASIGNATURAS = 'http://localhost:8080/api/curriculum'
 const API_PERIODOS = 'http://localhost:8080/api/periodos'
 const API_GRUPOS = 'http://localhost:8080/api/v1/grupos'
-const API_AULAS = 'http://localhost:8080/aulas' 
 
+// 🔥 IMPORTANTE: Rutas SIN /api para estos servicios (según configuración del Gateway)
+const API_AULAS = 'http://localhost:8080/aulas'
+const API_EDIFICIOS = 'http://localhost:8080/edificios'
+const API_DIVISIONES = 'http://localhost:8080/divisiones'
+
+// ==================== ESTADO ====================
 const asignaciones = ref([])
 const profesores = ref([])
 const asignaturas = ref([])
@@ -198,10 +212,10 @@ const periodos = ref([])
 const grupos = ref([])
 const aulas = ref([])
 
-// ✅ Cache de nombres de usuario, para no repetir peticiones al mismo idUsuario
 const usuariosCache = ref({})
+const profesoresMap = ref({})
 
-const itemsPerPage = 3
+const itemsPerPage = 5
 const currentPage = ref(1)
 
 const mostrarFormulario = ref(false)
@@ -219,6 +233,7 @@ const form = ref({
   id_grupos: []
 })
 
+// ==================== COMPUTED ====================
 const totalPages = computed(() => Math.ceil(asignaciones.value.length / itemsPerPage))
 const indexOfLast = computed(() => currentPage.value * itemsPerPage)
 const indexOfFirst = computed(() => indexOfLast.value - itemsPerPage)
@@ -226,7 +241,7 @@ const currentAsignaciones = computed(() =>
   asignaciones.value.slice(indexOfFirst.value, indexOfLast.value)
 )
 
-// ✅ Trae el nombre completo de un usuario por su ID, con cache
+// ==================== FUNCIONES AUXILIARES ====================
 const obtenerNombreUsuario = async (idUsuario) => {
   if (!idUsuario) return 'N/A'
   if (usuariosCache.value[idUsuario]) return usuariosCache.value[idUsuario]
@@ -243,10 +258,27 @@ const obtenerNombreUsuario = async (idUsuario) => {
   }
 }
 
+// ✅ Obtener nombre completo del profesor desde el DTO
 const obtenerNombreProfesor = async (idProfesor) => {
+  // Primero buscar en el cache
+  if (profesoresMap.value[idProfesor]) {
+    return profesoresMap.value[idProfesor]
+  }
+  
+  // Buscar en la lista de profesores
   const profesor = profesores.value.find(p => p.id === idProfesor)
   if (!profesor) return 'N/A'
-  return await obtenerNombreUsuario(profesor.idUsuario)
+  
+  // Si tiene nombreCompleto en el DTO, usarlo directamente
+  if (profesor.nombreCompleto) {
+    profesoresMap.value[idProfesor] = profesor.nombreCompleto
+    return profesor.nombreCompleto
+  }
+  
+  // Si no, obtener del usuario
+  const nombre = await obtenerNombreUsuario(profesor.idUsuario)
+  profesoresMap.value[idProfesor] = nombre
+  return nombre
 }
 
 const obtenerNombreAsignatura = (idAsignatura) => {
@@ -269,6 +301,48 @@ const obtenerAula = (idAula) => {
   return aula || null
 }
 
+// ✅ Obtener división y edificio desde las relaciones
+const obtenerDivisionYEdificio = async (idAula) => {
+  if (!idAula) return { division: '-', edificio: '-' }
+  
+  try {
+    const aulaId = typeof idAula === 'string' ? parseInt(idAula) : idAula
+    const response = await axios.get(`${API_AULAS}/${aulaId}`)
+    const idEdificio = response.data.idEdificio
+    
+    if (idEdificio) {
+      try {
+        const edificioId = typeof idEdificio === 'string' ? parseInt(idEdificio) : idEdificio
+        const edificioResponse = await axios.get(`${API_EDIFICIOS}/${edificioId}`)
+        const idDivision = edificioResponse.data.idDivision
+        
+        if (idDivision) {
+          try {
+            const divisionId = typeof idDivision === 'string' ? parseInt(idDivision) : idDivision
+            const divisionResponse = await axios.get(`${API_DIVISIONES}/${divisionId}`)
+            return {
+              division: divisionResponse.data.nombre || '-',
+              edificio: edificioResponse.data.nombre || '-'
+            }
+          } catch (err) {
+            console.error('Error obteniendo división:', err)
+            return { division: '-', edificio: edificioResponse.data.nombre || '-' }
+          }
+        }
+        return { division: '-', edificio: edificioResponse.data.nombre || '-' }
+      } catch (err) {
+        console.error('Error obteniendo edificio:', err)
+        return { division: '-', edificio: '-' }
+      }
+    }
+    return { division: '-', edificio: '-' }
+  } catch (err) {
+    console.error('Error obteniendo aula:', err)
+    return { division: '-', edificio: '-' }
+  }
+}
+
+// ==================== CARGAR DATOS ====================
 const cargarCatalogos = async () => {
   try {
     const [profRes, asigRes, perRes, gruposRes, aulasRes] = await Promise.all([
@@ -278,17 +352,28 @@ const cargarCatalogos = async () => {
       axios.get(API_GRUPOS),
       axios.get(API_AULAS)
     ])
+    
     profesores.value = profRes.data
     asignaturas.value = asigRes.data
     periodos.value = perRes.data
     grupos.value = gruposRes.data
     aulas.value = aulasRes.data
+    
+    // ✅ Precargar nombres de profesores en caché usando nombreCompleto del DTO
+    for (const prof of profesores.value) {
+      if (prof.nombreCompleto) {
+        profesoresMap.value[prof.id] = prof.nombreCompleto
+      } else if (prof.idUsuario) {
+        const nombre = await obtenerNombreUsuario(prof.idUsuario)
+        profesoresMap.value[prof.id] = nombre
+      }
+    }
   } catch (err) {
     console.error('Error cargando catálogos:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error',
-      text: 'No se pudieron cargar los catálogos',
+      text: 'No se pudieron cargar los catálogos. Verifica que el Gateway esté corriendo.',
       confirmButtonColor: '#3ABEF9',
       background: '#ffffff',
       color: '#213547',
@@ -305,26 +390,30 @@ const cargarAsignaciones = async () => {
     const aulasRes = await axios.get(API_ASIGNACIONES_AULAS)
     const aulasAsignadas = aulasRes.data
 
-    // ✅ Se resuelven los nombres de profesor de forma asíncrona (por el cruce con usuario)
     const asignacionesConDatos = await Promise.all(
       res.data.map(async (asig) => {
         const aulaAsignada = aulasAsignadas.find(
           a => a.idProfesor === asig.idProfesor && a.idPeriodo === asig.idPeriodo
         )
         const aulaInfo = aulaAsignada ? obtenerAula(aulaAsignada.idAula) : null
+        
+        const { division, edificio } = await obtenerDivisionYEdificio(aulaAsignada?.idAula)
 
         const nombresGrupos = (asig.idGrupos || [])
           .map(id => obtenerNombreGrupo(id))
           .filter(Boolean)
           .join(', ')
 
+        // ✅ Obtener nombre completo del profesor
+        const nombreProfesor = await obtenerNombreProfesor(asig.idProfesor)
+
         return {
           id: asig.id,
-          nombreProfesor: await obtenerNombreProfesor(asig.idProfesor),
+          nombreProfesor: nombreProfesor,
           asignatura: obtenerNombreAsignatura(asig.idAsignatura),
-          division: '-', // el catálogo de curriculum no trae división anidada; se deja pendiente si se necesita
+          division: division,
           aula: aulaInfo ? aulaInfo.nombre : '-',
-          edificio: '-', // el catálogo de aulas no trae edificio anidado por ahora
+          edificio: edificio,
           periodo: obtenerNombrePeriodo(asig.idPeriodo),
           grupos: nombresGrupos || '-',
           datosOriginales: asig
@@ -350,6 +439,7 @@ const cargarAsignaciones = async () => {
   }
 }
 
+// ==================== CRUD ====================
 const abrirFormularioNuevo = () => {
   modoEdicion.value = false
   itemEditando.value = null
@@ -393,7 +483,6 @@ const editarAsignacion = async (asig) => {
 const guardarAsignacion = async () => {
   cargandoAccion.value = true
   try {
-    // ✅ Ahora se manda en camelCase, como lo espera el backend nuevo
     const payloadAsignatura = {
       idProfesor: form.value.id_profesor,
       idAsignatura: form.value.id_asignatura,
@@ -528,6 +617,7 @@ const cerrarFormulario = () => {
   itemEditando.value = null
 }
 
+// ==================== LIFECYCLE ====================
 onMounted(async () => {
   await cargarCatalogos()
   await cargarAsignaciones()
@@ -688,6 +778,7 @@ onMounted(async () => {
   margin-right: 8px;
 }
 
+/* ===== FORMULARIO ===== */
 .checkbox-group {
   max-height: 200px;
   overflow-y: auto;
@@ -834,6 +925,7 @@ onMounted(async () => {
   background: #f1f5f9;
 }
 
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .asignaciones-main {
     padding: 0 15px;
@@ -942,5 +1034,86 @@ onMounted(async () => {
   .checkbox-item {
     padding: 6px 0;
   }
+}
+
+/* ===== LOADING ===== */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #e2e8f0;
+  border-top-color: #3abef9;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  margin-top: 15px;
+  color: #64748b;
+}
+
+.action-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.action-loading .spinner {
+  width: 40px;
+  height: 40px;
+}
+
+.action-loading p {
+  margin-top: 15px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 60px 20px;
+  text-align: center;
+  border: 1px solid #f0f0f0;
+}
+
+.empty-content i {
+  font-size: 4rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.empty-content h3 {
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.empty-content p {
+  color: #94a3b8;
 }
 </style>
